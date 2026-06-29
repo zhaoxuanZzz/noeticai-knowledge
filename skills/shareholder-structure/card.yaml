@@ -1,0 +1,28 @@
+id: shareholder-structure
+name: 股权结构分析
+description: 分析目标企业股东结构、实控人、持股链路和股权异常信号。
+
+inputs:
+  - company_name
+  - unified_social_credit_code
+
+data_needs:
+  - 查询企业工商基本信息
+  - 查询当前股东列表及持股比例
+  - 查询历史股权变更
+  - 查询实际控制人
+  - 查询对外投资和关联企业
+
+outputs:
+  - shareholder_summary
+  - control_chain
+  - related_entities
+  - risk_flags
+  - company_wiki_writeback_status
+  - evidence_gaps
+
+rules:
+  - 不要编造工商、股权或关联企业数据
+  - 数据缺失时输出 evidence_gaps
+  - 所有结论必须说明依据字段
+  - 补齐公开企业信息后必须写回企业信息库 raw/wiki，并说明写回状态

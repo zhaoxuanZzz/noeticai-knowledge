@@ -1,0 +1,8 @@
+name: financing_history
+description: 融资轮次、投资方、估值变化和资本市场信号。
+required_fields:
+  - financing_timeline
+  - investor_profile
+  - valuation_signals
+  - capital_market_status
+  - evidence_gaps

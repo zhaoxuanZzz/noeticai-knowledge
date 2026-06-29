@@ -1,0 +1,29 @@
+id: company-basic-info
+name: 企业基本信息查询
+description: 仅查询并回显目标企业工商登记基本信息，用于简单核对与插件联调测试。
+
+inputs:
+  - company_name
+  - unified_social_credit_code
+
+data_needs:
+  - 查询企业工商基本信息，包括企业名称、统一社会信用代码、法定代表人、注册资本、成立日期、经营状态、注册地址、经营范围
+
+outputs:
+  - company_name_confirmed
+  - unified_social_credit_code
+  - legal_representative
+  - registered_capital
+  - establishment_date
+  - operating_status
+  - registered_address
+  - business_scope
+  - company_wiki_writeback_status
+  - evidence_gaps
+
+rules:
+  - 不要编造工商数据
+  - 数据缺失时输出 evidence_gaps
+  - 所有已返回字段必须说明数据来源与时间
+  - 补齐公开企业信息后必须写回企业信息库 raw/wiki，并说明写回状态
+  - 不做行业分析、风险研判或投资建议

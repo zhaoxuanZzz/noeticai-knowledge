@@ -1,0 +1,5 @@
+name: no_fabricated_data
+inputs: [company_profile, shareholder_structure, litigation_risk, financing_history]
+checks:
+  - no_company_registry_equity_litigation_or_financing_fact_is_invented
+  - unavailable_external_data_is_reported_as_missing

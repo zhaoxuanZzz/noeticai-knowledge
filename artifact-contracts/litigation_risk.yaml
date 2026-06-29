@@ -1,0 +1,8 @@
+name: litigation_risk
+description: 诉讼、执行、失信和相关司法风险信号。
+required_fields:
+  - litigation_summary
+  - enforcement_records
+  - credit_risk_flags
+  - case_trends
+  - evidence_gaps

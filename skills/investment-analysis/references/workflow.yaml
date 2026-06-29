@@ -1,0 +1,17 @@
+name: 投资分析
+stages:
+  - id: profile
+    skills: [company-profile]
+    outputs: [company_profile]
+
+  - id: analysis
+    skills: [shareholder-structure, litigation-risk, financing-history]
+    inputs: [company_profile]
+    parallel: true
+    outputs: [shareholder_structure, litigation_risk, financing_history]
+
+  - id: report
+    skills: [investment-analysis]
+    inputs: [company_profile, shareholder_structure, litigation_risk, financing_history]
+    outputs: [investment_analysis_report]
+    quality_gates: [evidence_coverage, no_fabricated_data]

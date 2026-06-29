@@ -1,0 +1,8 @@
+name: company_profile
+description: 企业主体、工商基础信息、经营状态、行业定位和核心标签。
+required_fields:
+  - company_summary
+  - industry_position
+  - operating_status
+  - key_tags
+  - evidence_gaps

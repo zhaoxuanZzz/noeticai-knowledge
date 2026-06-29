@@ -1,0 +1,28 @@
+id: company-profile
+name: 企业画像
+description: 汇总目标企业基本信息、经营状态、行业定位与核心标签，为后续分析提供统一主体上下文。
+
+inputs:
+  - company_name
+  - unified_social_credit_code
+
+data_needs:
+  - 查询企业工商基本信息，包括企业名称、统一社会信用代码、法定代表人、注册资本、成立日期、经营状态、注册地址、经营范围
+  - 查询企业所属行业与主营业务
+  - 查询企业规模信号（参保人数、分支机构、资质许可等公开信息）
+  - 查询近期经营异常、行政处罚等公开记录
+
+outputs:
+  - company_summary
+  - industry_position
+  - operating_status
+  - key_tags
+  - risk_flags
+  - company_wiki_writeback_status
+  - evidence_gaps
+
+rules:
+  - 不要编造工商或经营数据
+  - 数据缺失时输出 evidence_gaps
+  - 所有结论必须说明依据字段
+  - 补齐公开企业信息后必须写回企业信息库 raw/wiki，并说明写回状态

@@ -1,0 +1,8 @@
+name: shareholder_structure
+description: 股东结构、实控人、控制链路、关联企业和股权异常信号。
+required_fields:
+  - shareholder_summary
+  - control_chain
+  - related_entities
+  - risk_flags
+  - evidence_gaps

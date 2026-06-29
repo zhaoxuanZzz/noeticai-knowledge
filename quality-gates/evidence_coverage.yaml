@@ -1,0 +1,5 @@
+name: evidence_coverage
+inputs: [company_profile, shareholder_structure, litigation_risk, financing_history]
+checks:
+  - key_claims_reference_evidence_or_mark_gap
+  - material_missing_data_is_listed_in_evidence_gaps

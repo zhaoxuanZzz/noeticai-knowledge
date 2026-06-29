@@ -1,0 +1,17 @@
+name: 企业尽调
+stages:
+  - id: profile
+    skills: [company-profile]
+    outputs: [company_profile]
+
+  - id: analysis
+    skills: [shareholder-structure, litigation-risk, financing-history]
+    inputs: [company_profile]
+    parallel: true
+    outputs: [shareholder_structure, litigation_risk, financing_history]
+
+  - id: report
+    skills: [due-diligence]
+    inputs: [company_profile, shareholder_structure, litigation_risk, financing_history]
+    outputs: [due_diligence_report]
+    quality_gates: [evidence_coverage, no_fabricated_data]

@@ -1,0 +1,19 @@
+{
+  "name": "noeticai-knowledge",
+  "version": "0.1.0",
+  "description": "NoeticAI 企业知识卡片 Work Suite：围绕企业画像、股权结构、司法风险、融资历史和投资分析生成结构化研判。",
+  "author": {
+    "name": "NoeticAI"
+  },
+  "keywords": ["work-suite", "knowledge-card", "company-research"],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "NoeticAI 知识卡片",
+    "shortDescription": "企业研究、尽调和投研知识卡片套件",
+    "longDescription": "将企业研究、尽调和投研中的知识卡片拆分为独立技能，并通过 Work Suite workflow 组合为企业尽调、投资分析等流程。",
+    "developerName": "NoeticAI",
+    "category": "Productivity",
+    "capabilities": ["Interactive", "Research"]
+  }
+}

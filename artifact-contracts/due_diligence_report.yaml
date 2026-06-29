@@ -1,0 +1,9 @@
+name: due_diligence_report
+description: 汇总企业画像、股权、司法和融资信息形成的企业尽调摘要。
+required_fields:
+  - company_assessment
+  - equity_and_control_risks
+  - litigation_and_operating_risks
+  - financing_signals
+  - evidence_gaps
+  - recommendations

@@ -1,0 +1,9 @@
+name: investment_analysis_report
+description: 汇总核心知识卡片形成的投资研判报告。
+required_fields:
+  - target_overview
+  - governance_assessment
+  - risk_assessment
+  - financing_and_valuation_signals
+  - investment_view
+  - evidence_gaps
