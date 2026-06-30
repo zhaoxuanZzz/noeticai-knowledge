@@ -1,7 +1,7 @@
 # NoeticAI 知识卡片 Work Suite 改造方案
 
 > 版本：v0.2 · 更新日期：2026-06-28  
-> 目标：将 noeticai 企业知识卡片整理为 Codex skills 插件。  
+> 目标：将 noeticai 企业知识卡片整理为 Hermes、Codex、Qoder 等平台兼容的 skills 插件。  
 > 原则：卡片独立、入口 skill 内部 workflow 显式编排、产物协议可检查、暂不实现 runner。
 
 ## 1. 背景与目标
@@ -11,14 +11,14 @@ noeticai 现有知识卡片具备两类能力：
 1. **知识分析能力**：卡片定义输入、分析逻辑、输出结构。
 2. **数据获取能力**：卡片通过 `data_needs` 描述所需外部数据。
 
-本方案将知识卡片迁移为 `noeticai-knowledge` skills 插件。迁移后：
+本方案将知识卡片迁移为 `noeticai-knowledge` 多平台 skills 插件。迁移后：
 
 - 每张卡片都是独立 `skill`
 - 业务入口如 `企业尽调`、`投资分析` 也是独立 `skill`
 - 业务顺序放入入口 skill 的 `references/workflow.yaml`
 - stage 间产物由 `artifact-contracts/*.yaml` 描述
 - 结果检查目标由 `quality-gates/*.yaml` 描述
-- `.mcp.json` 只作为 Codex plugin companion 配置
+- `.mcp.json` 只作为跨平台 companion 配置
 
 不在本阶段实现 workflow runtime、数据库 schema 迁移或 MCP 工具名自动映射。
 
@@ -27,6 +27,8 @@ noeticai 现有知识卡片具备两类能力：
 ```text
 noeticai-knowledge/
 ├── .codex-plugin/
+│   └── plugin.json
+├── .claude-plugin/
 │   └── plugin.json
 ├── .mcp.json
 ├── README.md
@@ -67,11 +69,11 @@ noeticai-knowledge/
             └── workflow.yaml
 ```
 
-旧 `.claude-plugin/`、`.qoder-plugin/` 和顶层 `workflows/` 不再保留。
+保留各宿主需要的 manifest；顶层 `workflows/` 不再保留。
 
 ## 3. Plugin Manifest
 
-`.codex-plugin/plugin.json` 是唯一插件 manifest：
+`.codex-plugin/plugin.json` 是 Codex 兼容 manifest；其他宿主可保留自己的 manifest：
 
 ```json
 {
@@ -168,7 +170,7 @@ data_needs:
 
 - `python3 scripts/validate_work_suite.py --self-test` 通过
 - `python3 scripts/validate_work_suite.py .` 通过
-- `.codex-plugin/plugin.json` 是唯一插件 manifest
+- 宿主 manifest 存在且名称一致
 - workflow 位于入口 skill 的 `references/workflow.yaml`
 - workflow 输出都有对应 artifact contract
 - workflow quality gate 都有对应 YAML

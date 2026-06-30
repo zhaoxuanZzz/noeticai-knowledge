@@ -1,6 +1,6 @@
 # NoeticAI Knowledge Cards Work Suite
 
-Codex skills plugin that migrates NoeticAI enterprise knowledge cards into atomic and workflow-backed skills.
+Cross-platform skills plugin for Hermes, Codex, Qoder, and compatible hosts. It organizes NoeticAI enterprise knowledge cards into atomic and workflow-backed skills.
 
 > **Disclaimer:** Outputs are for research and decision support only. They do not replace formal due diligence, legal opinions, or investment advice.
 
@@ -17,7 +17,7 @@ Codex skills plugin that migrates NoeticAI enterprise knowledge cards into atomi
 
 ## Skill Workflows
 
-Business workflows live inside entry skills as `references/workflow.yaml`. Codex discovery still starts from `skills/*/SKILL.md`.
+Business workflows live inside entry skills as `references/workflow.yaml`. Cross-platform skill discovery still starts from `skills/*/SKILL.md`.
 
 | Skill | Workflow |
 |----------|-------------|
@@ -34,7 +34,7 @@ After lookup, the full result is stored as a raw source in the knowledge base `r
 
 ## Development
 
-Link this repo into a local Codex plugin directory for testing:
+Link this repo into the local plugin directory of Hermes or another compatible host for testing:
 
 ```bash
 ln -s /Users/zhaoxuan/code/noeticai-knowledge \
@@ -54,6 +54,7 @@ See [docs/noeticai-knowledge-plugin-plan.md](./docs/noeticai-knowledge-plugin-pl
 ```text
 .
 ├── .codex-plugin/plugin.json
+├── .claude-plugin/plugin.json
 ├── .mcp.json
 ├── artifact-contracts/*.yaml
 ├── quality-gates/*.yaml

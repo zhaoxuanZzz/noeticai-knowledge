@@ -1,10 +1,10 @@
 # Skill Workflow
 
-本文定义 NoeticAI plugin 的 skill workflow 结构规范。目标是让 Codex 可发现的入口保持为 `skills/*/SKILL.md`，同时允许入口 skill 通过内部 workflow 编排前置原子 skills。
+本文定义 NoeticAI plugin 的 skill workflow 结构规范。目标是让 Hermes、Codex、Qoder 等平台可发现的入口保持为 `skills/*/SKILL.md`，同时允许入口 skill 通过内部 workflow 编排前置原子 skills。
 
 ## 目标与非目标
 
-插件是面向企业研究的专家包，包含原子 skill、入口 skill、入口 skill 内部 workflow、产物协议和质量门禁。它建立在 Codex plugin 标准结构之上，不替代 `.codex-plugin/plugin.json`。
+插件是面向企业研究的专家包，包含原子 skill、入口 skill、入口 skill 内部 workflow、产物协议和质量门禁。它建立在多平台 skills plugin 结构之上，不替代各宿主需要的 manifest。
 
 首版只定义目录、静态引用和人工可读语义，不实现 workflow runner，不新增数据库模型，不改知识卡片执行链路。
 
@@ -13,6 +13,8 @@
 ```text
 <plugin-name>/
   .codex-plugin/
+    plugin.json
+  .claude-plugin/
     plugin.json
   skills/
     <skill-name>/
@@ -33,8 +35,8 @@
 
 硬性规则：
 
-- `<plugin-name>` 使用 kebab-case，且必须等于 `.codex-plugin/plugin.json` 的 `name`。
-- `.codex-plugin/plugin.json` 必须存在，`skills` 指向 `./skills/`。
+- `<plugin-name>` 使用 kebab-case，且必须等于 manifest 中的 `name`。
+- 至少一个宿主 manifest 必须存在；支持 `.codex-plugin/plugin.json`、`.claude-plugin/plugin.json` 等平台入口。
 - 不在 `plugin.json` 添加 workflow 自定义字段；workflow 元数据放在对应入口 skill 的 `references/workflow.yaml`。
 - `skills/` 下每个目录是一个 skill，必须包含 `SKILL.md`。
 - 入口 skill 可以在 `references/workflow.yaml` 显式编排前置原子 skills。
@@ -142,7 +144,7 @@ python3 scripts/validate_work_suite.py <plugin-root>
 
 校验范围：
 
-- `.codex-plugin/plugin.json` 存在，且 `name` 等于 `<plugin-root>` 目录名。
+- 宿主 manifest 存在，且 `name` 等于 `<plugin-root>` 目录名。
 - `skills/*/SKILL.md` 存在。
 - `skills/*/references/workflow.yaml` 的 `stages[].skills` 引用已有 skill 目录名。
 - `stages[].inputs` 只能引用前序 stage 声明过的 `outputs`。
@@ -154,6 +156,7 @@ python3 scripts/validate_work_suite.py <plugin-root>
 ```text
 credit-rating-analyst/
   .codex-plugin/plugin.json
+  .claude-plugin/plugin.json
   skills/
     rating-knowledge-base/SKILL.md
     industry-research/SKILL.md
@@ -174,7 +177,7 @@ credit-rating-analyst/
     methodology-consistency.yaml
 ```
 
-这个套件中，入口 skill 是 Codex 可发现入口；workflow 是入口 skill 内的 SOP；artifact contract 负责上下游数据约束；quality gate 负责评估闭环。
+这个套件中，入口 skill 是多平台可发现入口；workflow 是入口 skill 内的 SOP；artifact contract 负责上下游数据约束；quality gate 负责评估闭环。
 
 ## 评审场景
 

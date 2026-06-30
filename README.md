@@ -1,6 +1,6 @@
 # NoeticAI 知识卡片 Work Suite
 
-将 noeticai 项目中的企业知识卡片迁移为 Codex 可加载的 skills 插件。
+将 noeticai 项目中的企业知识卡片整理为可被 Hermes、Codex、Qoder 等平台加载的 skills 插件。
 
 > **免责声明：** 本套件输出仅用于研究和决策辅助，不替代正式尽职调查、法律意见或投资建议。
 
@@ -17,7 +17,7 @@
 
 ## Skill 内 Workflow
 
-业务 workflow 放在对应入口 skill 的 `references/workflow.yaml` 中，作为该 skill 的前置执行流程；Codex 可发现入口仍然是 `skills/*/SKILL.md`。
+业务 workflow 放在对应入口 skill 的 `references/workflow.yaml` 中，作为该 skill 的前置执行流程；跨平台可发现入口仍然是 `skills/*/SKILL.md`。
 
 | Skill | Workflow |
 |----------|------|
@@ -34,7 +34,7 @@
 
 ## 开发
 
-本仓库为独立开发目录。在 Codex 插件目录中调试时，可将本目录链接到本地 `plugins/` 下：
+本仓库为独立开发目录。在 Hermes 或其他宿主的本地插件目录中调试时，可将本目录链接到对应 `plugins/` 下：
 
 ```bash
 ln -s /Users/zhaoxuan/code/noeticai-knowledge \
@@ -53,7 +53,8 @@ python3 scripts/validate_work_suite.py .
 
 ```text
 .
-├── .codex-plugin/plugin.json    # Codex plugin manifest
+├── .claude-plugin/plugin.json   # Claude/Hermes 兼容 manifest
+├── .codex-plugin/plugin.json    # Codex 兼容 manifest
 ├── .mcp.json                    # MCP companion 配置
 ├── artifact-contracts/*.yaml    # skill workflow 产物协议
 ├── quality-gates/*.yaml         # skill workflow 质量门禁

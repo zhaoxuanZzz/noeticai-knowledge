@@ -2,7 +2,7 @@
 
 ## 连接器说明
 
-本插件保留 `.mcp.json` 作为 Codex plugin companion 配置，当前已列出企查查 MCP 服务端点。
+本插件保留 `.mcp.json` 作为跨平台 companion 配置，当前已列出企查查 MCP 服务端点。
 
 本插件不定义连接协议，也不把 MCP 工具名写入业务 skill workflow。业务 skill 只通过 `card.yaml` 的 `data_needs` 描述所需企业数据，并在 skill 内先查企业信息库 wiki、再按缺口补齐公开企业信息。
 
