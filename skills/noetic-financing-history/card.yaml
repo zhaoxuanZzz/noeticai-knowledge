@@ -1,0 +1,27 @@
+id: noetic-financing-history
+name: 融资历史分析
+description: 分析目标企业融资轮次、投资方、估值变化与资本市场信号。
+
+inputs:
+  - company_name
+  - unified_social_credit_code
+
+data_needs:
+  - 查询企业融资历史，包括轮次、时间、投资方、融资金额和估值
+  - 查询上市/挂牌状态及资本市场相关信息
+  - 查询股东结构中机构股东与产业资本背景
+  - 查询与融资相关的公开新闻或公告
+
+outputs:
+  - financing_timeline
+  - investor_profile
+  - valuation_signals
+  - capital_market_status
+  - company_wiki_writeback_status
+  - evidence_gaps
+
+rules:
+  - 不要编造融资轮次、金额或估值数据
+  - 数据缺失时输出 evidence_gaps
+  - 所有结论必须说明依据字段
+  - 补齐公开企业信息后必须写回企业信息库 raw/wiki，并说明写回状态

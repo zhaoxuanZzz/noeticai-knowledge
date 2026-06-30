@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 import sys
 import tempfile
+import ast
 from pathlib import Path
 
 
@@ -82,31 +83,126 @@ def yaml_names(directory: Path) -> set[str]:
     return {path.stem for path in directory.glob("*.yaml")}
 
 
-def validate(root: Path) -> list[str]:
+def read_json(path: Path, errors: list[str]) -> dict[str, object] | None:
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        errors.append(f"{path}: invalid JSON: {exc}")
+        return None
+    if not isinstance(data, dict):
+        errors.append(f"{path}: expected object")
+        return None
+    return data
+
+
+def parse_simple_yaml(path: Path, errors: list[str]) -> dict[str, str]:
+    values: dict[str, str] = {}
+    for line_no, raw in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        if ":" not in line:
+            errors.append(f"{path}:{line_no}: unsupported YAML shape")
+            continue
+        key, value = line.split(":", 1)
+        values[key.strip()] = value.strip().strip("'\"")
+    return values
+
+
+def skill_names(root: Path, errors: list[str]) -> set[str]:
+    skills_dir = root / "skills"
+    names: set[str] = set()
+    if not skills_dir.exists():
+        errors.append(f"missing {skills_dir}")
+        return names
+
+    for skill_dir in sorted(path for path in skills_dir.iterdir() if path.is_dir()):
+        names.add(skill_dir.name)
+        if not (skill_dir / "SKILL.md").exists():
+            errors.append(f"missing {skill_dir / 'SKILL.md'}")
+    return names
+
+
+def validate_codex(root: Path) -> list[str]:
     errors: list[str] = []
     plugin_json = root / ".codex-plugin" / "plugin.json"
-    skills_dir = root / "skills"
-    artifact_names = yaml_names(root / "artifact-contracts")
-    gate_names = yaml_names(root / "quality-gates")
 
     if not plugin_json.exists():
         errors.append(f"missing {plugin_json}")
     else:
-        try:
-            plugin = json.loads(plugin_json.read_text(encoding="utf-8"))
+        plugin = read_json(plugin_json, errors)
+        if plugin:
             if plugin.get("name") != root.name:
                 errors.append(f"{plugin_json}: name must equal plugin root directory '{root.name}'")
-        except json.JSONDecodeError as exc:
-            errors.append(f"{plugin_json}: invalid JSON: {exc}")
+            if plugin.get("skills") != "./skills/":
+                errors.append(f"{plugin_json}: skills must be './skills/'")
 
-    skill_names: set[str] = set()
-    if not skills_dir.exists():
-        errors.append(f"missing {skills_dir}")
+    skill_names(root, errors)
+    return errors
+
+
+def validate_claude(root: Path) -> list[str]:
+    errors: list[str] = []
+    plugin_json = root / ".claude-plugin" / "plugin.json"
+
+    if not plugin_json.exists():
+        errors.append(f"missing {plugin_json}")
     else:
-        for skill_dir in sorted(path for path in skills_dir.iterdir() if path.is_dir()):
-            skill_names.add(skill_dir.name)
-            if not (skill_dir / "SKILL.md").exists():
-                errors.append(f"missing {skill_dir / 'SKILL.md'}")
+        plugin = read_json(plugin_json, errors)
+        if plugin and plugin.get("name") != root.name:
+            errors.append(f"{plugin_json}: name must equal plugin root directory '{root.name}'")
+
+    skill_names(root, errors)
+    return errors
+
+
+def validate_hermes(root: Path) -> list[str]:
+    errors: list[str] = []
+    plugin_yaml = root / "plugin.yaml"
+    init_py = root / "__init__.py"
+
+    if not plugin_yaml.exists():
+        errors.append(f"missing {plugin_yaml}")
+    else:
+        plugin = parse_simple_yaml(plugin_yaml, errors)
+        if plugin.get("name") != root.name:
+            errors.append(f"{plugin_yaml}: name must equal plugin root directory '{root.name}'")
+        for key in ("version", "description"):
+            if not plugin.get(key):
+                errors.append(f"{plugin_yaml}: {key} is required")
+
+    if not init_py.exists():
+        errors.append(f"missing {init_py}")
+    else:
+        try:
+            tree = ast.parse(init_py.read_text(encoding="utf-8"), filename=str(init_py))
+        except SyntaxError as exc:
+            errors.append(f"{init_py}: invalid Python: {exc}")
+        else:
+            register = next(
+                (node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == "register"),
+                None,
+            )
+            if register is None:
+                errors.append(f"{init_py}: missing register(ctx)")
+            elif not register.args.args:
+                errors.append(f"{init_py}: register must accept ctx")
+            elif not any(
+                isinstance(node, ast.Attribute) and node.attr == "register_skill"
+                for node in ast.walk(register)
+            ):
+                errors.append(f"{init_py}: register(ctx) must call ctx.register_skill(...)")
+
+    skill_names(root, errors)
+    return errors
+
+
+def validate_work_suite(root: Path) -> list[str]:
+    errors: list[str] = []
+    skills_dir = root / "skills"
+    artifact_names = yaml_names(root / "artifact-contracts")
+    gate_names = yaml_names(root / "quality-gates")
+    names = skill_names(root, errors)
 
     for workflow in sorted(skills_dir.glob("*/references/workflow.yaml")):
         try:
@@ -119,7 +215,7 @@ def validate(root: Path) -> list[str]:
         for index, stage in enumerate(stages, 1):
             stage_id = stage["id"]
             for skill in stage.get("skills", []):
-                if skill not in skill_names:
+                if skill not in names:
                     errors.append(f"{workflow}: stage {stage_id}: unknown skill '{skill}'")
 
             for artifact in stage.get("inputs", []):
@@ -141,13 +237,32 @@ def validate(root: Path) -> list[str]:
     return errors
 
 
+VALIDATORS = {
+    "work-suite": validate_work_suite,
+    "codex": validate_codex,
+    "claude": validate_claude,
+    "hermes": validate_hermes,
+}
+
+
+def validate(root: Path, target: str = "all") -> list[str]:
+    names = VALIDATORS if target == "all" else {target: VALIDATORS[target]}
+    errors: list[str] = []
+    for name, validator in names.items():
+        errors.extend(f"{name}: {error}" for error in validator(root))
+    return errors
+
+
 def write(path: Path, text: str = "") -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
 
 
 def make_suite(root: Path) -> None:
-    write(root / ".codex-plugin" / "plugin.json", json.dumps({"name": root.name}))
+    write(root / ".codex-plugin" / "plugin.json", json.dumps({"name": root.name, "skills": "./skills/"}))
+    write(root / ".claude-plugin" / "plugin.json", json.dumps({"name": root.name}))
+    write(root / "plugin.yaml", f"name: {root.name}\nversion: 0.1.0\ndescription: Test plugin\n")
+    write(root / "__init__.py", "def register(ctx):\n    ctx.register_skill('research', 'skills/research/SKILL.md')\n")
     write(root / "skills" / "research" / "SKILL.md")
     write(root / "artifact-contracts" / "context.yaml")
     write(root / "quality-gates" / "coverage.yaml")
@@ -213,13 +328,17 @@ stages:
 def main(argv: list[str]) -> int:
     if argv == ["--self-test"]:
         return run_self_test()
-    if len(argv) != 1:
-        print("usage: python3 scripts/validate_work_suite.py <plugin-root>", file=sys.stderr)
+    target = "all"
+    if len(argv) == 3 and argv[0] == "--target":
+        target = argv[1]
+        argv = argv[2:]
+    if target not in {"all", *VALIDATORS} or len(argv) != 1:
+        print("usage: python3 scripts/validate_work_suite.py [--target all|work-suite|codex|claude|hermes] <plugin-root>", file=sys.stderr)
         print("       python3 scripts/validate_work_suite.py --self-test", file=sys.stderr)
         return 2
 
     root = Path(argv[0]).resolve()
-    errors = validate(root)
+    errors = validate(root, target)
     if errors:
         for error in errors:
             print(f"ERROR: {error}", file=sys.stderr)

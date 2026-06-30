@@ -21,8 +21,8 @@ Business workflows live inside entry skills as `references/workflow.yaml`. Codex
 
 | Skill | Workflow |
 |----------|-------------|
-| 企业尽调 | [skills/due-diligence/references/workflow.yaml](./skills/due-diligence/references/workflow.yaml) |
-| 投资分析 | [skills/investment-analysis/references/workflow.yaml](./skills/investment-analysis/references/workflow.yaml) |
+| 企业尽调 | [skills/noetic-due-diligence/references/workflow.yaml](./skills/noetic-due-diligence/references/workflow.yaml) |
+| 投资分析 | [skills/noetic-investment-analysis/references/workflow.yaml](./skills/noetic-investment-analysis/references/workflow.yaml) |
 
 ## Company Data Lookup Strategy
 
@@ -30,7 +30,7 @@ Each company business skill reads its own `card.yaml.data_needs`, checks the loc
 
 The company knowledge base defaults to `~/.noeticai/company-knowledge` and can be overridden with `NOETICAI_COMPANY_KB_DIR`. Public lookup is used only when the wiki has no match, the company identity is uncertain, required fields are missing, or the matched data is clearly stale.
 
-After lookup, the full result is stored as a raw source in the knowledge base `raw/`, then compiled into `wiki/` through the `karpathy-llm-wiki` Ingest flow. Each business skill reports the company wiki writeback status. This plugin stores capabilities and rules, not company data.
+After lookup, the full result is stored as a raw source in the knowledge base `raw/`, then compiled into `wiki/` through the `noetic-karpathy-llm-wiki` Ingest flow. Each business skill reports the company wiki writeback status. This plugin stores capabilities and rules, not company data.
 
 ## Development
 

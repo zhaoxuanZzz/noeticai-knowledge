@@ -1,0 +1,9 @@
+name: noeticai-knowledge
+version: 0.1.0
+description: NoeticAI enterprise knowledge-card skills for company research, due diligence, and investment analysis.
+author: NoeticAI
+requires_env:
+  - name: QCC_MCP_TOKEN
+    description: Token for Qichacha MCP access.
+    secret: true
+provides_skills: [noetic-company-basic-info, noetic-company-profile, noetic-due-diligence, noetic-financing-history, noetic-investment-analysis, noetic-karpathy-llm-wiki, noetic-litigation-risk, noetic-shareholder-structure]

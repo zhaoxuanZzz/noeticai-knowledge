@@ -21,8 +21,8 @@
 
 | Skill | Workflow |
 |----------|------|
-| 企业尽调 | [skills/due-diligence/references/workflow.yaml](./skills/due-diligence/references/workflow.yaml) |
-| 投资分析 | [skills/investment-analysis/references/workflow.yaml](./skills/investment-analysis/references/workflow.yaml) |
+| 企业尽调 | [skills/noetic-due-diligence/references/workflow.yaml](./skills/noetic-due-diligence/references/workflow.yaml) |
+| 投资分析 | [skills/noetic-investment-analysis/references/workflow.yaml](./skills/noetic-investment-analysis/references/workflow.yaml) |
 
 ## 企业数据查询策略
 
@@ -30,7 +30,7 @@
 
 企业信息库默认位于 `~/.noeticai/company-knowledge`，可通过 `NOETICAI_COMPANY_KB_DIR` 覆盖。只有 wiki 无命中、主体不确定、字段缺失，或信息明显过期时，才补齐公开企业信息。
 
-补齐后，完整结果写入企业信息库 `raw/`，再按 `karpathy-llm-wiki` Ingest 流程整理进 `wiki/`。每个业务技能最终标注企业 wiki 写回状态。插件仓库只保存能力和规则，不保存具体企业数据。
+补齐后，完整结果写入企业信息库 `raw/`，再按 `noetic-karpathy-llm-wiki` Ingest 流程整理进 `wiki/`。每个业务技能最终标注企业 wiki 写回状态。插件仓库只保存能力和规则，不保存具体企业数据。
 
 ## 开发
 
@@ -61,7 +61,7 @@ python3 scripts/validate_work_suite.py .
 │   ├── {skill-name}/SKILL.md        # 卡片执行说明
 │   ├── {skill-name}/card.yaml       # 卡片结构化元数据
 │   ├── {entry-skill}/references/workflow.yaml
-│   └── karpathy-llm-wiki/       # LLM Wiki 技能
+│   └── noetic-karpathy-llm-wiki/       # LLM Wiki 技能
 ├── CONNECTORS.md
 ├── docs/WORK_SUITE_WORKFLOW.md
 └── docs/noeticai-knowledge-plugin-plan.md

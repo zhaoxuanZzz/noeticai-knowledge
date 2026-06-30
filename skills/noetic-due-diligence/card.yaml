@@ -1,0 +1,23 @@
+id: noetic-due-diligence-report
+name: 企业尽调
+description: 汇总企业画像、股权结构、司法风险和融资历史，生成企业尽调摘要。
+
+inputs:
+  - company_profile
+  - shareholder_structure
+  - litigation_risk
+  - financing_history
+
+outputs:
+  - company_assessment
+  - equity_and_control_risks
+  - litigation_and_operating_risks
+  - financing_signals
+  - evidence_gaps
+  - recommendations
+
+rules:
+  - 不要编造工商、司法、股权、融资或估值信息
+  - 缺失信息必须进入 evidence_gaps
+  - 所有判断必须能追溯到前置产物或用户提供资料
+  - 如果前置产物缺失，先执行 references/workflow.yaml 的对应阶段

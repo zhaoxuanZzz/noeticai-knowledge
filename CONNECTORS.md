@@ -10,7 +10,7 @@
 
 | 类别 | Companion 配置 | 增强能力 | 状态 |
 |------|----------------|---------|------|
-| 企业信息库 | `skills/karpathy-llm-wiki` | 复用 `~/.noeticai/company-knowledge` 或 `NOETICAI_COMPANY_KB_DIR` 中已整理的企业信息 | 已内置 |
+| 企业信息库 | `skills/noetic-karpathy-llm-wiki` | 复用 `~/.noeticai/company-knowledge` 或 `NOETICAI_COMPANY_KB_DIR` 中已整理的企业信息 | 已内置 |
 | 企查查 | `.mcp.json` | 工商信息、股东结构、司法案件、融资历史等企业数据查询 | 已配置端点 |
 
 ## 无连接器时的工作方式
@@ -29,4 +29,4 @@
 | 企业信息库 | 全部 Skill | 先复用 wiki 中未过期的企业信息，减少付费接口调用 |
 | 企查查 MCP | 企业画像、股权结构分析、司法风险分析、融资历史分析、企业基本信息查询 | 仅在 wiki 无命中、主体不确定、字段缺失或数据过期时，按本 skill 的 `card.yaml.data_needs` 补齐公开企业信息，并在输出中标注数据来源和查询时间 |
 
-补齐后，将完整返回作为 raw source 写入企业信息库 `raw/`，再按 `karpathy-llm-wiki` Ingest 流程整理进 `wiki/`。业务 skill 最终标注企业 wiki 写回状态。
+补齐后，将完整返回作为 raw source 写入企业信息库 `raw/`，再按 `noetic-karpathy-llm-wiki` Ingest 流程整理进 `wiki/`。业务 skill 最终标注企业 wiki 写回状态。
