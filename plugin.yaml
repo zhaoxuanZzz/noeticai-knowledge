@@ -43,4 +43,5 @@ mcp_servers:
     auth:
       type: bearer
       token: ${QCC_MCP_TOKEN}
-provides_skills: [noetic-company-basic-info, noetic-company-profile, noetic-due-diligence, noetic-financing-history, noetic-investment-analysis, noetic-karpathy-llm-wiki, noetic-litigation-risk, noetic-shareholder-structure]
+provides_commands: [noetic-company-basic-info, noetic-company-profile, noetic-due-diligence, noetic-financing-history, noetic-investment-analysis, noetic-karpathy-llm-wiki, noetic-litigation-risk, noetic-shareholder-structure, noetic-workflow]
+provides_skills: [noetic-company-basic-info, noetic-company-profile, noetic-due-diligence, noetic-financing-history, noetic-investment-analysis, noetic-karpathy-llm-wiki, noetic-litigation-risk, noetic-shareholder-structure, noetic-workflow]

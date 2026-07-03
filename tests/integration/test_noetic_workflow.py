@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import os
 import subprocess
@@ -38,6 +39,24 @@ class NoeticWorkflowIntegrationTest(unittest.TestCase):
     def test_static_suite_validation_passes(self) -> None:
         result = run_command(str(VALIDATOR), "--target", "all", ".")
         self.assertIn("OK:", result.stdout)
+
+    def test_hermes_plugin_commands_load_namespaced_skills(self) -> None:
+        plugin = load_plugin()
+        ctx = FakeHermesCtx()
+
+        plugin.register(ctx)
+
+        self.assertIn("noetic-due-diligence", ctx.skills)
+        self.assertIn("noetic-due-diligence", ctx.commands)
+        command_prompt = ctx.commands["noetic-due-diligence"]("杭州XX科技有限公司")
+        self.assertIn("`noeticai-knowledge:noetic-due-diligence`", command_prompt)
+        self.assertIn("杭州XX科技有限公司", command_prompt)
+
+        rewrite = ctx.hooks["pre_gateway_dispatch"](event=FakeEvent("/noetic-due-diligence 杭州XX科技有限公司"))
+        self.assertEqual("rewrite", rewrite["action"])
+        self.assertIn("`noeticai-knowledge:noetic-due-diligence`", rewrite["text"])
+
+        self.assertIsNone(ctx.hooks["pre_gateway_dispatch"](event=FakeEvent("/unknown")))
 
     def test_entry_workflows_validate(self) -> None:
         for skill in ("noetic-due-diligence", "noetic-investment-analysis"):
@@ -312,6 +331,36 @@ def parent_values(argv: list[str]) -> list[str]:
 
 def real_companies() -> list[str]:
     return [line.strip() for line in REAL_COMPANIES.read_text(encoding="utf-8").splitlines() if line.strip()]
+
+
+def load_plugin():
+    spec = importlib.util.spec_from_file_location("noeticai_knowledge_plugin", ROOT / "__init__.py")
+    if spec is None or spec.loader is None:
+        raise RuntimeError("cannot load plugin")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+class FakeHermesCtx:
+    def __init__(self) -> None:
+        self.skills: dict[str, str] = {}
+        self.hooks = {}
+        self.commands = {}
+
+    def register_skill(self, name: str, path: Path) -> None:
+        self.skills[name] = Path(path).as_posix()
+
+    def register_hook(self, name: str, handler) -> None:
+        self.hooks[name] = handler
+
+    def register_command(self, name: str, handler, description: str = "", args_hint: str = "") -> None:
+        self.commands[name] = handler
+
+
+class FakeEvent:
+    def __init__(self, text: str) -> None:
+        self.text = text
 
 
 def write_fake_hermes(path: Path, log_path: Path, profiles: tuple[str, ...] = ("worker", "gen")) -> None:
