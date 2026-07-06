@@ -18,12 +18,9 @@ outputs:
   - operating_status
   - registered_address
   - business_scope
-  - company_wiki_writeback_status
   - evidence_gaps
 
 rules:
   - 不要编造工商数据
   - 数据缺失时输出 evidence_gaps
-  - 所有已返回字段必须说明数据来源与时间
-  - 补齐公开企业信息后必须写回企业信息库 raw/wiki，并说明写回状态
   - 不做行业分析、风险研判或投资建议

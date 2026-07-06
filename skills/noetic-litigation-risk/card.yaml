@@ -17,11 +17,9 @@ outputs:
   - enforcement_records
   - credit_risk_flags
   - case_trends
-  - company_wiki_writeback_status
   - evidence_gaps
 
 rules:
   - 不要编造案件、执行或失信数据
   - 数据缺失时输出 evidence_gaps
   - 所有结论必须说明依据字段
-  - 补齐公开企业信息后必须写回企业信息库 raw/wiki，并说明写回状态

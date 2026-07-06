@@ -83,11 +83,14 @@ class NoeticWorkflowIntegrationTest(unittest.TestCase):
         )
 
         self.assertIn("Noetic workflow execution plan: noetic-due-diligence (5 tasks)", result.stdout)
-        self.assertIn("task1: worker noetic-company-profile parents=[] outputs=['company_profile']", result.stdout)
-        self.assertIn("task2: worker noetic-shareholder-structure parents=['task1']", result.stdout)
-        self.assertIn("task3: worker noetic-litigation-risk parents=['task1']", result.stdout)
-        self.assertIn("task4: worker noetic-financing-history parents=['task1']", result.stdout)
-        self.assertIn("task5: gen noetic-due-diligence parents=['task1', 'task2', 'task3', 'task4']", result.stdout)
+        self.assertIn("task1: data noetic-company-profile assignee=worker parents=[] outputs=['company_profile']", result.stdout)
+        self.assertIn("task2: data noetic-shareholder-structure assignee=worker parents=['task1']", result.stdout)
+        self.assertIn("task3: data noetic-litigation-risk assignee=worker parents=['task1']", result.stdout)
+        self.assertIn("task4: data noetic-financing-history assignee=worker parents=['task1']", result.stdout)
+        self.assertIn("task5: gen noetic-due-diligence assignee=worker parents=['task1', 'task2', 'task3', 'task4']", result.stdout)
+        self.assertIn("--assignee worker", result.stdout)
+        self.assertNotIn("--assignee data", result.stdout)
+        self.assertNotIn("--assignee gen", result.stdout)
 
     def test_compile_outputs_dag_json_without_hermes_commands(self) -> None:
         result = run_command(
@@ -104,6 +107,12 @@ class NoeticWorkflowIntegrationTest(unittest.TestCase):
 
         self.assertEqual("noetic-due-diligence", graph["skill"])
         self.assertEqual(5, len(graph["nodes"]))
+        self.assertEqual("worker", graph["nodes"][0]["assignee"])
+        self.assertEqual("data", graph["nodes"][0]["role"])
+        self.assertEqual("noetic-data-agent", graph["nodes"][0]["role_skill"])
+        self.assertEqual("worker", graph["nodes"][4]["assignee"])
+        self.assertEqual("gen", graph["nodes"][4]["role"])
+        self.assertEqual("noetic-gen-agent", graph["nodes"][4]["role_skill"])
         self.assertEqual(
             [
                 {"from": "task1", "to": "task2"},
@@ -137,8 +146,17 @@ class NoeticWorkflowIntegrationTest(unittest.TestCase):
         self.assertEqual("noetic-due-diligence", graph["skill"])
         self.assertEqual(5, len(graph["nodes"]))
         self.assertEqual("noetic-company-profile", graph["nodes"][0]["skill"])
+        self.assertEqual("worker", graph["nodes"][0]["assignee"])
+        self.assertEqual("data", graph["nodes"][0]["role"])
+        self.assertEqual("noetic-data-agent", graph["nodes"][0]["role_skill"])
+        self.assertEqual(["noetic-data-agent", "noetic-karpathy-llm-wiki"], graph["nodes"][0]["required_skills"])
         self.assertIn("执行 Noetic 知识卡片：noetic-company-profile", graph["nodes"][0]["prompt"])
+        self.assertIn("必需搭配 skill：noetic-karpathy-llm-wiki", graph["nodes"][0]["prompt"])
         self.assertEqual(["task1", "task2", "task3", "task4"], graph["nodes"][4]["parents"])
+        self.assertEqual("worker", graph["nodes"][4]["assignee"])
+        self.assertEqual("gen", graph["nodes"][4]["role"])
+        self.assertEqual("noetic-gen-agent", graph["nodes"][4]["role_skill"])
+        self.assertEqual(["noetic-gen-agent"], graph["nodes"][4]["required_skills"])
         self.assertNotIn("hermes kanban create", result.stdout)
 
     def test_real_company_names_dry_run_for_all_entry_workflows(self) -> None:
@@ -189,6 +207,7 @@ class NoeticWorkflowIntegrationTest(unittest.TestCase):
             calls = [json.loads(line)["argv"] for line in log_path.read_text(encoding="utf-8").splitlines()]
             self.assertEqual(5, len(calls))
             self.assertEqual("noetic-company-profile", calls[0][calls[0].index("--skill") + 1])
+            self.assertTrue(all(call[call.index("--assignee") + 1] == "worker" for call in calls))
             self.assertNotIn("--parent", calls[0])
             self.assertEqual(["h1"], parent_values(calls[1]))
             self.assertEqual(["h1"], parent_values(calls[2]))
@@ -295,7 +314,7 @@ class NoeticWorkflowIntegrationTest(unittest.TestCase):
             )
 
             self.assertEqual(1, result.returncode)
-            self.assertIn("missing Hermes profile(s): gen, worker", result.stderr)
+            self.assertIn("missing Hermes profile(s): worker", result.stderr)
             self.assertIn("hermes profile create worker", result.stderr)
             self.assertFalse(log_path.exists())
 
@@ -536,7 +555,7 @@ class FakeEvent:
         self.text = text
 
 
-def write_fake_hermes(path: Path, log_path: Path, profiles: tuple[str, ...] = ("worker", "gen")) -> None:
+def write_fake_hermes(path: Path, log_path: Path, profiles: tuple[str, ...] = ("worker",)) -> None:
     path.write_text(
         f"""#!/usr/bin/env python3
 import json

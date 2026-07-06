@@ -18,6 +18,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_KANBAN_RUNS_DIR = Path.home() / ".noeticai" / "kanban-runs"
+EXECUTION_PROFILE = "worker"
 
 
 class WorkSuiteError(Exception):
@@ -94,6 +95,9 @@ class TaskPlan:
     title: str
     body: str
     assignee: str
+    role: str
+    role_skill: str
+    required_skills: list[str]
     outputs: list[str]
     parents: list[str]
     task_id: str | None = None
@@ -190,15 +194,16 @@ def stage_task_outputs(stage_skills: list[str], outputs: list[str]) -> list[list
     raise WorkSuiteError("multi-skill stages must have zero outputs or one output per skill")
 
 
-def task_body(entry_skill: str, company: str, stage: dict[str, object], skill: str, outputs: list[str], assignee: str) -> str:
+def task_body(entry_skill: str, company: str, stage: dict[str, object], skill: str, outputs: list[str], role: str) -> str:
     inputs = ", ".join(stage.get("inputs", [])) or "none"
     output_text = ", ".join(outputs) or "none"
-    if assignee == "gen":
+    if role == "gen":
         return f"""执行 Noetic 编排型报告卡片：{skill}
 
 目标公司：{company}
 消费前置 artifact：{inputs}
 输出最终 artifact：{output_text}
+委派角色 skill：noetic-gen-agent
 
 要求：
 - 只综合父任务交接中的 artifact、来源、数据时间和 evidence_gaps
@@ -211,10 +216,12 @@ def task_body(entry_skill: str, company: str, stage: dict[str, object], skill: s
 目标公司：{company}
 输入 artifact：{inputs}
 输出 artifact：{output_text}
+委派角色 skill：noetic-data-agent
+必需搭配 skill：noetic-karpathy-llm-wiki
 
 要求：
 - 按该 skill 的 SKILL.md 和 card.yaml 执行
-- 优先检索企业信息库 wiki
+- 按 noetic-karpathy-llm-wiki 规范优先检索企业信息库 wiki
 - 缺失或过期时补齐公开信息并写回 raw/wiki
 - 不编造数据，缺失字段写入 evidence_gaps
 - 完成时返回 artifact 摘要、来源、数据时间和 evidence_gaps
@@ -244,15 +251,20 @@ def build_task_plan(entry_skill: str, company: str, workspace: str) -> list[Task
             if previous_ref and not stage_is_parallel:
                 parents.append(previous_ref)
 
-            assignee = "gen" if stage_id == "report" or stage_skill == entry_skill else "worker"
+            role = "gen" if stage_id == "report" or stage_skill == entry_skill else "data"
+            role_skill = "noetic-gen-agent" if role == "gen" else "noetic-data-agent"
+            required_skills = [role_skill] if role == "gen" else [role_skill, "noetic-karpathy-llm-wiki"]
             outputs = outputs_by_task[index]
             tasks.append(
                 TaskPlan(
                     skill=stage_skill,
                     stage_id=stage_id,
                     title=f"[Noetic] {company} / {stage_id} / {stage_skill}",
-                    body=task_body(entry_skill, company, stage, stage_skill, outputs, assignee),
-                    assignee=assignee,
+                    body=task_body(entry_skill, company, stage, stage_skill, outputs, role),
+                    assignee=EXECUTION_PROFILE,
+                    role=role,
+                    role_skill=role_skill,
+                    required_skills=required_skills,
                     outputs=outputs,
                     parents=parents,
                     task_id=ref,
@@ -308,8 +320,8 @@ def build_triage_plan(company: str, skill_hint: str | None) -> TriagePlan:
 期望交付：企业尽调或投资分析类结构化报告（含 evidence_gaps）
 
 要求：
-- 按 Noetic 知识卡片拆分前置 worker 任务与最终 gen 报告任务
-- 优先路由到 worker / gen profile（若已安装）
+- 按 Noetic 知识卡片拆分前置 data agent 任务与最终 gen 报告任务
+- 统一路由到 worker profile，并用角色 skill 区分 data / gen 职责
 - 子任务需声明输入/输出 artifact 与依赖关系
 """,
     )
@@ -384,6 +396,9 @@ def command_compile(args: argparse.Namespace) -> int:
                 "stage": task.stage_id,
                 "skill": task.skill,
                 "assignee": task.assignee,
+                "role": task.role,
+                "role_skill": task.role_skill,
+                "required_skills": task.required_skills,
                 "title": task.title,
                 "body": task.body,
                 "outputs": task.outputs,
@@ -409,10 +424,8 @@ def ensure_profiles(tasks: list[TaskPlan]) -> None:
 
 
 def profile_create_command(profile: str) -> str:
-    if profile == "worker":
-        return 'hermes profile create worker --clone --description "Runs Noetic worker knowledge cards and returns structured artifacts with evidence gaps."'
-    if profile == "gen":
-        return 'hermes profile create gen --clone --description "Runs Noetic orchestrating report cards from parent task artifacts. It does not invent missing facts."'
+    if profile == EXECUTION_PROFILE:
+        return 'hermes profile create worker --clone --description "Runs Noetic workflow tasks using role skills from task context."'
     return f"hermes profile create {shlex.quote(profile)} --clone"
 
 
@@ -437,7 +450,7 @@ def command_execute_planned(args: argparse.Namespace) -> int:
     print(f"Noetic workflow execution plan: {args.skill} ({len(tasks)} tasks)")
     print(f"workspace: {workspace}")
     for task in tasks:
-        print(f"- {task.task_id}: {task.assignee} {task.skill} parents={task.parents or []} outputs={task.outputs or []}")
+        print(f"- {task.task_id}: {task.role} {task.skill} assignee={task.assignee} parents={task.parents or []} outputs={task.outputs or []}")
 
     if args.dry_run or not args.apply:
         print("\nDry run Hermes Kanban commands:")
@@ -499,13 +512,16 @@ def command_execute_delegate(args: argparse.Namespace) -> int:
         "skill": args.skill,
         "company": args.company,
         "workspace": workspace,
-        "instructions": "Delegate ready nodes to subagents. A node is ready when all parent artifacts are available; if subagents are unavailable, run nodes in the current agent in dependency order.",
+        "instructions": "Delegate ready nodes to subagents using node.required_skills. Data nodes must include both noetic-data-agent and noetic-karpathy-llm-wiki; report nodes use noetic-gen-agent. A node is ready when all parent artifacts are available; if subagents are unavailable, run nodes in the current agent in dependency order.",
         "nodes": [
             {
                 "id": task.task_id,
                 "stage": task.stage_id,
                 "skill": task.skill,
-                "role": task.assignee,
+                "assignee": task.assignee,
+                "role": task.role,
+                "role_skill": task.role_skill,
+                "required_skills": task.required_skills,
                 "title": task.title,
                 "parents": task.parents,
                 "outputs": task.outputs,
