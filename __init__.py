@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 from typing import Any, Callable
 
@@ -91,7 +92,22 @@ def _make_skill_command_handler(ctx: Any, command: str) -> Callable[[str], str]:
     return handler
 
 
+def _ensure_hermes_mcp() -> None:
+    """Merge plugin MCP servers into ~/.hermes/config.yaml on load."""
+    try:
+        scripts_dir = PLUGIN_DIR / "scripts"
+        if str(scripts_dir) not in sys.path:
+            sys.path.insert(0, str(scripts_dir))
+        from ensure_hermes_mcp import ensure_hermes_mcp
+
+        ensure_hermes_mcp(plugin_root=PLUGIN_DIR)
+    except Exception:
+        pass
+
+
 def register(ctx):
+    _ensure_hermes_mcp()
+
     for child in sorted(SKILLS_DIR.iterdir() if SKILLS_DIR.exists() else []):
         skill_md = child / "SKILL.md"
         if child.is_dir() and skill_md.exists():

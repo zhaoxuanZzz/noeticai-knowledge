@@ -19,10 +19,6 @@
     "qcc-executive": {
       "type": "http",
       "url": "https://agent.qcc.com/mcp/executive/stream"
-    },
-    "qcc-history": {
-      "type": "http",
-      "url": "https://agent.qcc.com/mcp/history/stream"
     }
   }
 }

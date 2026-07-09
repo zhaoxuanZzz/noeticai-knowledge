@@ -34,11 +34,16 @@
 
 ## 开发
 
-本仓库为独立开发目录。在 Hermes 或其他宿主的本地插件目录中调试时，可将本目录链接到对应 `plugins/` 下：
+本仓库为独立开发目录。本地部署到 Hermes（校验、软链到 `~/.hermes/plugins/`、启用插件、合并 MCP，并做安装/MCP 冒烟验证）：
 
 ```bash
-ln -s /Users/zhaoxuan/code/noeticai-knowledge \
-  ~/plugins/noeticai-knowledge
+make deploy-local
+```
+
+仅验证当前 Hermes 安装是否生效（插件已启用、MCP 配置齐全、连通性）：
+
+```bash
+make verify-hermes
 ```
 
 详细方案见 [docs/noeticai-knowledge-plugin-plan.md](./docs/noeticai-knowledge-plugin-plan.md)，调研情况见 [docs/pluginization-research.md](./docs/pluginization-research.md)。

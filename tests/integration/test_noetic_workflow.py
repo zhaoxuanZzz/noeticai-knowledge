@@ -45,7 +45,18 @@ class NoeticWorkflowIntegrationTest(unittest.TestCase):
         plugin = load_plugin()
         ctx = FakeHermesCtx()
 
-        plugin.register(ctx)
+        with tempfile.TemporaryDirectory() as temp:
+            env_home = Path(temp) / "hermes-home"
+            env_home.mkdir()
+            previous = os.environ.get("HERMES_HOME")
+            os.environ["HERMES_HOME"] = str(env_home)
+            try:
+                plugin.register(ctx)
+            finally:
+                if previous is None:
+                    os.environ.pop("HERMES_HOME", None)
+                else:
+                    os.environ["HERMES_HOME"] = previous
 
         self.assertIn("noetic-due-diligence", ctx.skills)
         self.assertIn("noetic-due-diligence", ctx.commands)
@@ -64,6 +75,62 @@ class NoeticWorkflowIntegrationTest(unittest.TestCase):
         self.assertIn("route work through role skills", rewrite["text"])
 
         self.assertIsNone(ctx.hooks["pre_gateway_dispatch"](event=FakeEvent("/unknown")))
+
+    def test_ensure_hermes_mcp_merges_and_rewrites_auth(self) -> None:
+        helper = load_ensure_hermes_mcp()
+        with tempfile.TemporaryDirectory() as temp:
+            home = Path(temp) / "hermes-home"
+            home.mkdir()
+            config_path = home / "config.yaml"
+            config_path.write_text(
+                """model:
+  default: demo
+plugins:
+  enabled:
+  - noeticai-knowledge
+  disabled: []
+mcp_servers:
+  other-server:
+    url: https://example.com/mcp
+  qcc-company:
+    url: https://agent.qcc.com/mcp/company/stream
+    headers:
+      Authorization: Bearer hardcoded-token
+extra_top_level: keep-me
+""",
+                encoding="utf-8",
+            )
+
+            changed = helper.ensure_hermes_mcp(plugin_root=ROOT, home=home)
+            self.assertTrue(changed)
+
+            text = config_path.read_text(encoding="utf-8")
+            self.assertIn("extra_top_level: keep-me", text)
+            self.assertIn("- noeticai-knowledge", text)
+            self.assertIn("default: demo", text)
+
+            data = helper._load_yaml(config_path)
+            servers = data["mcp_servers"]
+            self.assertEqual("https://example.com/mcp", servers["other-server"]["url"])
+            self.assertEqual(
+                "Bearer ${QCC_MCP_TOKEN}",
+                servers["qcc-company"]["headers"]["Authorization"],
+            )
+            for name in (
+                "qcc-company",
+                "qcc-risk",
+                "qcc-ipr",
+                "qcc-operation",
+                "qcc-executive",
+            ):
+                self.assertIn(name, servers)
+                self.assertEqual(
+                    "Bearer ${QCC_MCP_TOKEN}",
+                    servers[name]["headers"]["Authorization"],
+                )
+
+            changed_again = helper.ensure_hermes_mcp(plugin_root=ROOT, home=home)
+            self.assertFalse(changed_again)
 
     def test_codex_role_hook_injects_only_for_noetic_prompts(self) -> None:
         result = subprocess.run(
@@ -531,6 +598,18 @@ def load_plugin():
     spec = importlib.util.spec_from_file_location("noeticai_knowledge_plugin", ROOT / "__init__.py")
     if spec is None or spec.loader is None:
         raise RuntimeError("cannot load plugin")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def load_ensure_hermes_mcp():
+    spec = importlib.util.spec_from_file_location(
+        "ensure_hermes_mcp",
+        ROOT / "scripts" / "ensure_hermes_mcp.py",
+    )
+    if spec is None or spec.loader is None:
+        raise RuntimeError("cannot load ensure_hermes_mcp")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module

@@ -19,6 +19,9 @@ rm -rf "$TARGET"
 ln -s "$REPO_ROOT" "$TARGET"
 
 hermes plugins enable "$PLUGIN_NAME"
+python3 "$REPO_ROOT/scripts/ensure_hermes_mcp.py"
+# Re-enable after MCP merge in case a previous full-config rewrite dropped the list.
+hermes plugins enable "$PLUGIN_NAME" >/dev/null
 
 echo "Deployed $PLUGIN_NAME -> $TARGET"
-hermes plugins list | grep "$PLUGIN_NAME" || true
+python3 "$REPO_ROOT/scripts/verify_hermes_install.py" --quick

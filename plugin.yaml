@@ -6,5 +6,36 @@ requires_env:
   - name: QCC_MCP_TOKEN
     description: Token for Qichacha MCP access.
     secret: true
+mcp_servers:
+  qcc-company:
+    url: https://agent.qcc.com/mcp/company/stream
+    timeout: 120
+    connect_timeout: 30
+    headers:
+      Authorization: "Bearer ${QCC_MCP_TOKEN}"
+  qcc-risk:
+    url: https://agent.qcc.com/mcp/risk/stream
+    timeout: 120
+    connect_timeout: 30
+    headers:
+      Authorization: "Bearer ${QCC_MCP_TOKEN}"
+  qcc-ipr:
+    url: https://agent.qcc.com/mcp/ipr/stream
+    timeout: 120
+    connect_timeout: 30
+    headers:
+      Authorization: "Bearer ${QCC_MCP_TOKEN}"
+  qcc-operation:
+    url: https://agent.qcc.com/mcp/operation/stream
+    timeout: 120
+    connect_timeout: 30
+    headers:
+      Authorization: "Bearer ${QCC_MCP_TOKEN}"
+  qcc-executive:
+    url: https://agent.qcc.com/mcp/executive/stream
+    timeout: 120
+    connect_timeout: 30
+    headers:
+      Authorization: "Bearer ${QCC_MCP_TOKEN}"
 provides_commands: [noetic-company-basic-info, noetic-company-profile, noetic-data-agent, noetic-due-diligence, noetic-financing-history, noetic-gen-agent, noetic-investment-analysis, noetic-karpathy-llm-wiki, noetic-litigation-risk, noetic-shareholder-structure, noetic-workflow]
 provides_skills: [noetic-company-basic-info, noetic-company-profile, noetic-data-agent, noetic-due-diligence, noetic-financing-history, noetic-gen-agent, noetic-investment-analysis, noetic-karpathy-llm-wiki, noetic-litigation-risk, noetic-shareholder-structure, noetic-workflow]
