@@ -7,6 +7,7 @@
   },
   "keywords": ["work-suite", "knowledge-card", "company-research"],
   "skills": "./skills/",
+  "hooks": "./hooks/hooks.json",
   "mcpServers": "./.mcp.json",
   "interface": {
     "displayName": "NoeticAI 知识卡片",

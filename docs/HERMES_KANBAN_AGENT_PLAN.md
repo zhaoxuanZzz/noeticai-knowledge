@@ -6,11 +6,11 @@
 
 `/noetic-workflow` 负责读取编排型 skill 的 `references/workflow.yaml`；Hermes Kanban backend 负责把 workflow 变成任务图执行。
 
-首版只保留一个 Hermes 执行 profile，角色分工交给 role skill：
+首版不指定 Hermes 执行 profile，Kanban task 由 Hermes 默认 agent 承接；角色分工交给 role skill：
 
 | Profile / Skill | 用途 | 执行什么 | 不做什么 |
 | --- | --- | --- | --- |
-| `worker` profile | Hermes task 运行身份 | 接收 Kanban task，加载 NoeticAI Knowledge 套件 | 不表达业务角色 |
+| 默认 agent | Hermes task 运行身份 | 接收 Kanban task，加载 NoeticAI Knowledge 套件 | 不表达业务角色 |
 | `noetic-data-agent` skill | 前置卡片角色 | 企业画像、股权结构、司法风险、融资历史等中间产物卡片 | 不生成最终报告，不把缺失字段补写成确定结论 |
 | `noetic-gen-agent` skill | 最终报告角色 | 企业尽调、投资分析等编排型报告卡片 | 不重新取数，不绕过父任务 artifact 补事实 |
 
@@ -72,12 +72,12 @@
 
 | Skill | 产物 | Role | Assignee |
 | --- | --- | --- | --- |
-| `noetic-company-profile` | `company_profile` | `data` | `worker` |
-| `noetic-shareholder-structure` | `shareholder_structure` | `data` | `worker` |
-| `noetic-litigation-risk` | `litigation_risk` | `data` | `worker` |
-| `noetic-financing-history` | `financing_history` | `data` | `worker` |
+| `noetic-company-profile` | `company_profile` | `data` | 默认 agent |
+| `noetic-shareholder-structure` | `shareholder_structure` | `data` | 默认 agent |
+| `noetic-litigation-risk` | `litigation_risk` | `data` | 默认 agent |
+| `noetic-financing-history` | `financing_history` | `data` | 默认 agent |
 
-这些前置卡片不是纯取数卡片。它们会按 `card.yaml` 的 `data_needs` 检索企业信息库或公开信息，也会产出结构化判断和 `evidence_gaps`。因此首版把它们统一交给 `worker` profile 执行，但用 `noetic-data-agent` / `noetic-gen-agent` 区分角色。
+这些前置卡片不是纯取数卡片。它们会按 `card.yaml` 的 `data_needs` 检索企业信息库或公开信息，也会产出结构化判断和 `evidence_gaps`。因此首版不按业务拆 profile，而是让 Hermes 默认 agent 执行 task，并用 `noetic-data-agent` / `noetic-gen-agent` 区分角色。
 
 ## Backend 映射
 
@@ -92,7 +92,7 @@
 | `stage.id == report` | `role=gen`，`role_skill=noetic-gen-agent` |
 | `stage.skills` 包含编排型 skill 本身（终端 stage） | `role=gen`，`role_skill=noetic-gen-agent` |
 | 其他 stage | `role=data`，`role_skill=noetic-data-agent` |
-| 所有 planned task | `--assignee worker` |
+| 所有 planned task | 不传 `--assignee`，使用 Hermes 默认 agent |
 
 首版不使用 `hermes kanban swarm`。官方 swarm helper 是固定的 workers -> verifier -> synthesizer 拓扑；我们先不做 verifier，所以直接用 `kanban create` + parent 依赖表达 DAG。
 
@@ -199,12 +199,12 @@ skills/noetic-workflow/scripts/noetic_workflow.py
 
 ## 执行模式
 
-`execute` 支持两种编排模式，由 `--mode` 选择（默认 `planned`）：
+`execute` 支持编排模式，由 `--mode` 显式选择：
 
 | 模式 | 说明 | 前置条件 |
 | --- | --- | --- |
-| `planned` | 读 `workflow.yaml`，确定性创建多条 `kanban create`（含 assignee、parent、skill） | `worker` profile 已创建 |
-| `auto` | 创建单条 `kanban create --triage`，由 Hermes `kanban_decomposer` 自动拆图 | gateway 运行中；`kanban.auto_decompose: true`；profile description 有助于路由 |
+| `planned` | 读 `workflow.yaml`，确定性创建多条 `kanban create`（含 parent、skill，不指定 assignee） | gateway/默认 agent 可执行 Kanban task |
+| `auto` | 创建单条 `kanban create --triage`，由 Hermes `kanban_decomposer` 自动拆图 | gateway 运行中；`kanban.auto_decompose: true` |
 
 选型建议：
 
@@ -216,7 +216,7 @@ skills/noetic-workflow/scripts/noetic_workflow.py
 示例：
 
 ```bash
-# planned（默认）
+# planned（标准流程）
 python skills/noetic-workflow/scripts/noetic_workflow.py execute \
   --mode planned \
   --skill noetic-due-diligence \
@@ -260,15 +260,7 @@ python skills/noetic-workflow/scripts/noetic_workflow.py execute \
 
 当前不是把一个 DAG JSON 直接交给 Hermes。Hermes CLI 暂无通用的 `import-dag` / `create-dag` 入口；DAG 能力通过 task parent 关系表达。`hermes kanban swarm` 可以一次创建图，但拓扑固定为 `workers -> verifier -> synthesizer`，不适合 Noetic workflow 的可变 stage graph。
 
-运行前需要先准备一个 Hermes profile：
-
-```bash
-hermes profile create worker --clone --description "Runs Noetic workflow tasks using role skills from task context."
-```
-
-这个 profile 要能加载 NoeticAI Knowledge 套件；业务职责由任务正文中的 `noetic-data-agent` / `noetic-gen-agent` 约束，不再用 profile 名表达角色。
-
-`--apply` 执行前会先调用 `hermes profile show worker`。如果 profile 不存在，脚本会在创建 Kanban task 前失败，并打印对应 `hermes profile create ...` 命令。`--dry-run` 不检查本机 profile。
+运行前不需要准备 Noetic 专用 profile。`--apply` 不再检查 `worker` profile，也不会给 `hermes kanban create` 传 `--assignee`；Hermes 按默认 agent 承接任务。业务职责由任务正文中的 `noetic-data-agent` / `noetic-gen-agent` 约束，不用 profile 名表达角色。
 
 一次完整运行是：
 
@@ -295,14 +287,12 @@ hermes kanban watch
 ```bash
 hermes kanban create "<data title>" \
   --body "<data task body>" \
-  --assignee worker \
   --skill noetic-company-profile \
   --workspace dir:/absolute/path/to/noetic-run \
   --json
 
 hermes kanban create "<report title>" \
   --body "<gen task body>" \
-  --assignee worker \
   --skill noetic-due-diligence \
   --parent <profile_task_id> \
   --parent <shareholder_task_id> \
@@ -315,13 +305,13 @@ hermes kanban create "<report title>" \
 Hermes 后续自己接管：
 
 1. 没有 parent 的 data task 进入 `ready`。
-2. gateway dispatcher 认领 ready task，启动 `worker` profile。
-3. worker 进程按任务正文里的 role skill 使用 data 角色，读取任务正文和父任务交接，不需要 shell 调 `hermes kanban show`。
+2. gateway dispatcher 认领 ready task，启动默认 agent。
+3. agent 进程按任务正文里的 role skill 使用 data 角色，读取任务正文和父任务交接，不需要 shell 调 `hermes kanban show`。
 4. data 角色完成后调用 `kanban_complete(summary=..., metadata=...)`。
 5. 所有 parent 完成后，Hermes 自动把 report task 从 `todo` promoted 到 `ready`。
-6. `worker` profile 被 dispatcher 启动，按 `noetic-gen-agent` role skill 读取父任务 handoff，生成最终报告并 complete。
+6. 默认 agent 被 dispatcher 启动，按 `noetic-gen-agent` role skill 读取父任务 handoff，生成最终报告并 complete。
 
-所以通用脚本只负责“创建任务和依赖”；Hermes backend 负责“调度 worker profile、注入 kanban 工具、传递父任务结果”，角色职责由 role skill 承担。
+所以通用脚本只负责“创建任务和依赖”；Hermes backend 负责“调度默认 agent、注入 kanban 工具、传递父任务结果”，角色职责由 role skill 承担。
 
 ## 对话入口触发
 
@@ -334,7 +324,7 @@ skills/noetic-workflow/SKILL.md
 这个 skill 不执行企业分析，只负责把自然语言请求转成 `noetic_workflow.py execute --apply`，并按用户选择使用 `planned` 或 `auto` 模式：
 
 ```bash
-# planned（标准流程，默认）
+# planned（标准流程）
 python /path/to/noeticai-knowledge/skills/noetic-workflow/scripts/noetic_workflow.py execute \
   --mode planned \
   --skill noetic-due-diligence \
@@ -373,7 +363,7 @@ Hermes 对话里也可以手工用 `/kanban create ...` 创建单个任务；但
 - 不把卡片内部强拆成纯 data / 纯 gen。
 - 不做 eval/verifier。
 - 不做可视化编排器。
-- 不做多个角色 profile 或复杂 profile 白名单。
+- 不做 Noetic 专用 profile 或复杂 profile 白名单。
 
 ## 后续触发条件
 

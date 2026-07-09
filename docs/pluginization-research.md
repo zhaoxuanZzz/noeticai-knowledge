@@ -1,7 +1,7 @@
 # NoeticAI Knowledge 插件化结论
 
 > 日期：2026-07-03
-> 范围：`noeticai-knowledge` 作为多宿主 skills 插件的结构、workflow、profile/agent 分工与企业数据策略。
+> 范围：`noeticai-knowledge` 作为多宿主 skills 插件的结构、workflow、agent role skill 分工与企业数据策略。
 
 ## 结论摘要
 
@@ -10,7 +10,7 @@
 - `skills/*/SKILL.md` 是跨宿主可发现入口。
 - 知识卡片保持独立 skill；需要标准前置流程时，由编排型 skill 的 `references/workflow.yaml` 声明 DAG。
 - `workflow.yaml` 只描述 stage、skills、inputs、outputs、parallel 等通用编排语义，不绑定 Hermes。
-- 执行层再把 workflow 映射到 agent/profile：Hermes 用 `worker` profile 承接 Kanban task，用 role skill 区分 data/gen；Codex、Claude 等宿主可用委派子代理模式按 DAG 节点执行。
+- 执行层再把 workflow 映射到 agent：Hermes 不指定 profile，使用默认 agent 承接 Kanban task，用 role skill 区分 data/gen；Codex、Claude 等宿主可用委派子代理模式按 DAG 节点执行。
 - 企业数据访问由 data agent 统一控制 wiki-first、QCC fallback 和 raw/wiki 写回；业务 skill 只描述业务产物和质量要求。
 - gen agent 只综合前置 artifact 生成最终报告，不重新取数、不补造缺失事实。
 
@@ -49,24 +49,24 @@ skills/
 | --- | --- | --- |
 | Skill | 声明单张知识卡片或最终报告能力 | `noetic-company-profile`、`noetic-due-diligence` |
 | Workflow | 声明前置 stage、artifact 输入输出和并行关系 | `skills/noetic-due-diligence/references/workflow.yaml` |
-| Agent/Profile | 执行 DAG 节点或角色 | `worker` profile、`data agent`、`gen agent` |
+| Agent / Role Skill | 执行 DAG 节点或角色 | 默认 agent、`noetic-data-agent`、`noetic-gen-agent` |
 | Backend | 提供具体任务执行方式 | Hermes Kanban、Codex 子代理委派、Claude 子代理委派 |
 
-首版只需要一个 Hermes profile 和两个 agent 角色：
+首版只需要 Hermes 默认 agent 和两个 role skill：
 
 | Profile / Agent | 执行什么 | 不做什么 |
 | --- | --- | --- |
-| `worker` profile | Hermes Kanban 的通用运行身份，负责接收 task 并加载 NoeticAI Knowledge 套件 | 不表达 data/gen 业务角色 |
-| `data agent` | 企业画像、股权结构、司法风险、融资历史等前置知识卡片；负责 wiki-first、QCC fallback、raw/wiki 写回和 `evidence_gaps` | 不生成最终尽调/投分报告，不把缺失字段写成确定结论 |
-| `gen agent` | 企业尽调、投资分析等编排型报告卡片；只综合父任务 artifact | 不重新取数，不绕过父任务数据缺口补事实 |
+| 默认 agent | Hermes Kanban 的通用运行身份，负责接收 task 并加载 NoeticAI Knowledge 套件 | 不表达 data/gen 业务角色 |
+| `noetic-data-agent` role skill | 企业画像、股权结构、司法风险、融资历史等前置知识卡片；负责 wiki-first、QCC fallback、raw/wiki 写回和 `evidence_gaps` | 不生成最终尽调/投分报告，不把缺失字段写成确定结论 |
+| `noetic-gen-agent` role skill | 企业尽调、投资分析等编排型报告卡片；只综合父任务 artifact | 不重新取数，不绕过父任务数据缺口补事实 |
 
-Hermes profile 固定为 `worker`；`data` / `gen` 是 workflow role，通过 `noetic-data-agent` / `noetic-gen-agent` role skill 表达。
+Hermes planned task 不传 `--assignee`；`data` / `gen` 是 workflow role，通过 `noetic-data-agent` / `noetic-gen-agent` role skill 表达。
 
 ## 跨宿主兼容
 
 `workflow.yaml` 不包含 Hermes Kanban 字段，因此可以被不同宿主解释：
 
-- Hermes：`workflow.yaml -> task DAG -> Kanban task`，所有 planned 节点分配给 `worker` profile，前置节点带 `noetic-data-agent`，报告节点带 `noetic-gen-agent`。
+- Hermes：`workflow.yaml -> task DAG -> Kanban task`，planned 节点不指定 assignee，前置节点带 `noetic-data-agent`，报告节点带 `noetic-gen-agent`。
 - Codex/Claude：`workflow.yaml -> JSON DAG -> 子代理委派`，每个节点拿到对应 skill、输入 artifact 和输出 artifact。
 - 无子代理宿主：当前 agent 可按 DAG 拓扑顺序执行；`parallel: true` 只是提示可并发，不是必需能力。
 
@@ -81,7 +81,7 @@ Hermes profile 固定为 `worker`；`data` / `gen` 是 workflow role，通过 `n
 | `node.id` | 编译时生成 | 本次 workflow 内的临时任务编号，如 `task1` |
 | `node.stage` | `stages[].id` | 业务阶段，如 `profile`、`analysis`、`report` |
 | `node.skill` | `stages[].skills[]` | 该节点要执行的 skill |
-| `node.role` / `assignee` | stage 与 entry skill 推导 | `role` 表达 data/gen；`assignee` 是 Hermes `worker` profile |
+| `node.role` / `role_skill` | stage 与 entry skill 推导 | `role` 表达 data/gen；`role_skill` 是 `noetic-data-agent` 或 `noetic-gen-agent` |
 | `node.outputs` | `stages[].outputs[]` | 节点交付的 artifact |
 | `edges[]` | `stages[].inputs[]` 与 stage 顺序 | artifact 依赖与任务父子关系 |
 
@@ -133,12 +133,12 @@ flowchart LR
 
 ### Hermes Kanban 与 LangGraph 对比
 
-当前前提是 Noetic agent 任务实际跑在 Hermes。对比重点不是“是否需要 graph”，而是谁来承接任务生命周期、profile 路由、日志、状态和人工接管。
+当前前提是 Noetic agent 任务实际跑在 Hermes。对比重点不是“是否需要 graph”，而是谁来承接任务生命周期、默认 agent 调度、日志、状态和人工接管。
 
 | 维度 | Hermes Kanban | LangGraph |
 | --- | --- | --- |
-| 执行位置 | Hermes 原生 task，由 `worker` profile 执行，role skill 约束职责 | 需要额外把 graph node 映射回 Hermes task |
-| 多 agent 分工 | `worker`、role skill、业务 skill、parent 依赖都是 Hermes 可见对象 | node 只是应用内函数或 runnable，agent 身份要另建适配层 |
+| 执行位置 | Hermes 原生 task，由默认 agent 执行，role skill 约束职责 | 需要额外把 graph node 映射回 Hermes task |
+| 多 agent 分工 | role skill、业务 skill、parent 依赖都是 Hermes 可见对象 | node 只是应用内函数或 runnable，agent 身份要另建适配层 |
 | 状态与日志 | task status、parent、log、dispatch 在同一套 Hermes board 中 | graph state 与 Hermes task state 容易变成两套真相 |
 | 插件分发 | 插件只提交 Kanban task，保持轻量 | 插件需引入 LangGraph 依赖和 checkpoint/store 策略 |
 | 可复现 DAG | `workflow.yaml -> kanban create --parent` 已覆盖标准尽调/投分 | 可以表达更复杂状态机，但当前标准 DAG 用不上 |
@@ -149,7 +149,7 @@ LangGraph 官方定位是 agent orchestration runtime，重点能力包括 durab
 
 建议：
 
-- Hermes 场景主链继续使用 Kanban：`workflow.yaml -> DAG -> hermes kanban create --parent -> worker profile execute`。
+- Hermes 场景主链继续使用 Kanban：`workflow.yaml -> DAG -> hermes kanban create --parent -> 默认 agent execute`。
 - LangGraph 不作为插件对外依赖，也不替代 Kanban task lifecycle。
 - 如果未来需要动态循环、审批中断、跨天恢复，可以在 Hermes dispatcher 或 Noetic 服务端内部试 LangGraph；插件仍只面向 Hermes Kanban contract。
 - 不做 `Noetic plugin -> LangGraph -> Hermes Kanban` 这种双调度链，除非 Kanban 无法表达真实业务状态。

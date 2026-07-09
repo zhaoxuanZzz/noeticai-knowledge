@@ -18,7 +18,6 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_KANBAN_RUNS_DIR = Path.home() / ".noeticai" / "kanban-runs"
-EXECUTION_PROFILE = "worker"
 
 
 class WorkSuiteError(Exception):
@@ -94,7 +93,6 @@ class TaskPlan:
     stage_id: str
     title: str
     body: str
-    assignee: str
     role: str
     role_skill: str
     required_skills: list[str]
@@ -261,7 +259,6 @@ def build_task_plan(entry_skill: str, company: str, workspace: str) -> list[Task
                     stage_id=stage_id,
                     title=f"[Noetic] {company} / {stage_id} / {stage_skill}",
                     body=task_body(entry_skill, company, stage, stage_skill, outputs, role),
-                    assignee=EXECUTION_PROFILE,
                     role=role,
                     role_skill=role_skill,
                     required_skills=required_skills,
@@ -321,7 +318,8 @@ def build_triage_plan(company: str, skill_hint: str | None) -> TriagePlan:
 
 要求：
 - 按 Noetic 知识卡片拆分前置 data agent 任务与最终 gen 报告任务
-- 统一路由到 worker profile，并用角色 skill 区分 data / gen 职责
+- 不指定 assignee，使用 Hermes 默认 agent 承接任务
+- 用角色 skill 区分 data / gen 职责
 - 子任务需声明输入/输出 artifact 与依赖关系
 """,
     )
@@ -335,8 +333,6 @@ def hermes_command(task: TaskPlan, workspace: str, resolved_ids: dict[str, str],
         task.title,
         "--body",
         task.body,
-        "--assignee",
-        task.assignee,
         "--skill",
         task.skill,
         "--workspace",
@@ -395,7 +391,6 @@ def command_compile(args: argparse.Namespace) -> int:
                 "id": task.task_id,
                 "stage": task.stage_id,
                 "skill": task.skill,
-                "assignee": task.assignee,
                 "role": task.role,
                 "role_skill": task.role_skill,
                 "required_skills": task.required_skills,
@@ -409,24 +404,6 @@ def command_compile(args: argparse.Namespace) -> int:
     }
     print(json.dumps(graph, ensure_ascii=False, indent=2))
     return 0
-
-
-def ensure_profiles(tasks: list[TaskPlan]) -> None:
-    missing: list[str] = []
-    for profile in sorted({task.assignee for task in tasks}):
-        result = subprocess.run(["hermes", "profile", "show", profile], text=True, capture_output=True)
-        if result.returncode != 0:
-            missing.append(profile)
-
-    if missing:
-        commands = "\n".join(profile_create_command(profile) for profile in missing)
-        raise WorkSuiteError(f"missing Hermes profile(s): {', '.join(missing)}\ncreate them first:\n{commands}")
-
-
-def profile_create_command(profile: str) -> str:
-    if profile == EXECUTION_PROFILE:
-        return 'hermes profile create worker --clone --description "Runs Noetic workflow tasks using role skills from task context."'
-    return f"hermes profile create {shlex.quote(profile)} --clone"
 
 
 def validate_execute_args(args: argparse.Namespace) -> None:
@@ -450,7 +427,7 @@ def command_execute_planned(args: argparse.Namespace) -> int:
     print(f"Noetic workflow execution plan: {args.skill} ({len(tasks)} tasks)")
     print(f"workspace: {workspace}")
     for task in tasks:
-        print(f"- {task.task_id}: {task.role} {task.skill} assignee={task.assignee} parents={task.parents or []} outputs={task.outputs or []}")
+        print(f"- {task.task_id}: {task.role} {task.skill} parents={task.parents or []} outputs={task.outputs or []}")
 
     if args.dry_run or not args.apply:
         print("\nDry run Hermes Kanban commands:")
@@ -459,7 +436,6 @@ def command_execute_planned(args: argparse.Namespace) -> int:
             print(shlex.join(printable_command(command)))
         return 0
 
-    ensure_profiles(tasks)
     ensure_workspace_dir(workspace)
 
     for task in tasks:
@@ -518,7 +494,6 @@ def command_execute_delegate(args: argparse.Namespace) -> int:
                 "id": task.task_id,
                 "stage": task.stage_id,
                 "skill": task.skill,
-                "assignee": task.assignee,
                 "role": task.role,
                 "role_skill": task.role_skill,
                 "required_skills": task.required_skills,
@@ -566,7 +541,7 @@ def build_parser() -> argparse.ArgumentParser:
     compile_parser.set_defaults(func=command_compile)
 
     execute = subparsers.add_parser("execute")
-    execute.add_argument("--mode", choices=["planned", "auto", "delegate"], default="delegate")
+    execute.add_argument("--mode", choices=["planned", "auto", "delegate"], required=True)
     execute.add_argument("--skill")
     execute.add_argument("--company", required=True)
     execute.add_argument(

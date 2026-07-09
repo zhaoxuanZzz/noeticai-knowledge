@@ -6,6 +6,11 @@ from typing import Any, Callable
 PLUGIN_NAME = "noeticai-knowledge"
 PLUGIN_DIR = Path(__file__).parent
 SKILLS_DIR = PLUGIN_DIR / "skills"
+ROLE_ROUTING = """When using the NoeticAI Knowledge plugin, route work through role skills:
+- `noetic-data-agent`: prepares and verifies prerequisite information.
+- `noetic-gen-agent`: synthesizes prepared information into final deliverables.
+
+Use data first when facts or context are missing; use gen when producing the final answer."""
 
 
 def _skill_names() -> set[str]:
@@ -46,7 +51,7 @@ def _command_args_hint(skill_md: Path) -> str:
 def _skill_prompt(command: str, args: str = "") -> str:
     tail = args.strip()
     suffix = f"\n\nUser arguments: {tail}" if tail else ""
-    return f"Load and follow the Hermes plugin skill `{PLUGIN_NAME}:{command}`.{suffix}"
+    return f"Load and follow the Hermes plugin skill `{PLUGIN_NAME}:{command}`.\n\n{ROLE_ROUTING}{suffix}"
 
 
 def _slash_access_denied(event: Any, gateway: Any, command: str) -> bool:

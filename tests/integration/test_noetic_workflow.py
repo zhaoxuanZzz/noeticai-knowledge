@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "skills" / "noetic-workflow" / "scripts" / "noetic_workflow.py"
 VALIDATOR = ROOT / "scripts" / "validate_work_suite.py"
 REAL_COMPANIES = ROOT / "tests" / "fixtures" / "real_companies.txt"
+ROLE_HOOK = ROOT / "hooks" / "noetic_role_routing.py"
 
 
 def run_command(*args: str, env: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
@@ -53,13 +54,54 @@ class NoeticWorkflowIntegrationTest(unittest.TestCase):
         self.assertIn("输入公司名称", ctx.command_args_hints["noetic-due-diligence"])
         command_prompt = ctx.commands["noetic-due-diligence"]("杭州XX科技有限公司")
         self.assertIn("`noeticai-knowledge:noetic-due-diligence`", command_prompt)
+        self.assertIn("noetic-data-agent", command_prompt)
+        self.assertIn("noetic-gen-agent", command_prompt)
         self.assertIn("杭州XX科技有限公司", command_prompt)
 
         rewrite = ctx.hooks["pre_gateway_dispatch"](event=FakeEvent("/noetic-due-diligence 杭州XX科技有限公司"))
         self.assertEqual("rewrite", rewrite["action"])
         self.assertIn("`noeticai-knowledge:noetic-due-diligence`", rewrite["text"])
+        self.assertIn("route work through role skills", rewrite["text"])
 
         self.assertIsNone(ctx.hooks["pre_gateway_dispatch"](event=FakeEvent("/unknown")))
+
+    def test_codex_role_hook_injects_only_for_noetic_prompts(self) -> None:
+        result = subprocess.run(
+            [sys.executable, str(ROLE_HOOK)],
+            input=json.dumps({"prompt": "Use noeticai-knowledge to prepare a report"}),
+            cwd=ROOT,
+            text=True,
+            capture_output=True,
+            check=True,
+        )
+        output = json.loads(result.stdout)
+        context = output["hookSpecificOutput"]["additionalContext"]
+        self.assertEqual("NOETIC:ROLE_ROUTING", output["systemMessage"])
+        self.assertEqual("UserPromptSubmit", output["hookSpecificOutput"]["hookEventName"])
+        self.assertIn("noetic-data-agent", context)
+        self.assertIn("noetic-gen-agent", context)
+        self.assertNotIn("company", context.lower())
+        self.assertNotIn("qcc", context.lower())
+
+        result = subprocess.run(
+            [sys.executable, str(ROLE_HOOK)],
+            input=json.dumps({"prompt": "帮我做企业画像"}),
+            cwd=ROOT,
+            text=True,
+            capture_output=True,
+            check=True,
+        )
+        self.assertIn("NOETIC:ROLE_ROUTING", result.stdout)
+
+        result = subprocess.run(
+            [sys.executable, str(ROLE_HOOK)],
+            input=json.dumps({"prompt": "format this README"}),
+            cwd=ROOT,
+            text=True,
+            capture_output=True,
+            check=True,
+        )
+        self.assertEqual("", result.stdout)
 
     def test_entry_workflows_validate(self) -> None:
         for skill in ("noetic-due-diligence", "noetic-investment-analysis"):
@@ -83,14 +125,12 @@ class NoeticWorkflowIntegrationTest(unittest.TestCase):
         )
 
         self.assertIn("Noetic workflow execution plan: noetic-due-diligence (5 tasks)", result.stdout)
-        self.assertIn("task1: data noetic-company-profile assignee=worker parents=[] outputs=['company_profile']", result.stdout)
-        self.assertIn("task2: data noetic-shareholder-structure assignee=worker parents=['task1']", result.stdout)
-        self.assertIn("task3: data noetic-litigation-risk assignee=worker parents=['task1']", result.stdout)
-        self.assertIn("task4: data noetic-financing-history assignee=worker parents=['task1']", result.stdout)
-        self.assertIn("task5: gen noetic-due-diligence assignee=worker parents=['task1', 'task2', 'task3', 'task4']", result.stdout)
-        self.assertIn("--assignee worker", result.stdout)
-        self.assertNotIn("--assignee data", result.stdout)
-        self.assertNotIn("--assignee gen", result.stdout)
+        self.assertIn("task1: data noetic-company-profile parents=[] outputs=['company_profile']", result.stdout)
+        self.assertIn("task2: data noetic-shareholder-structure parents=['task1']", result.stdout)
+        self.assertIn("task3: data noetic-litigation-risk parents=['task1']", result.stdout)
+        self.assertIn("task4: data noetic-financing-history parents=['task1']", result.stdout)
+        self.assertIn("task5: gen noetic-due-diligence parents=['task1', 'task2', 'task3', 'task4']", result.stdout)
+        self.assertNotIn("--assignee", result.stdout)
 
     def test_compile_outputs_dag_json_without_hermes_commands(self) -> None:
         result = run_command(
@@ -107,12 +147,11 @@ class NoeticWorkflowIntegrationTest(unittest.TestCase):
 
         self.assertEqual("noetic-due-diligence", graph["skill"])
         self.assertEqual(5, len(graph["nodes"]))
-        self.assertEqual("worker", graph["nodes"][0]["assignee"])
         self.assertEqual("data", graph["nodes"][0]["role"])
         self.assertEqual("noetic-data-agent", graph["nodes"][0]["role_skill"])
-        self.assertEqual("worker", graph["nodes"][4]["assignee"])
         self.assertEqual("gen", graph["nodes"][4]["role"])
         self.assertEqual("noetic-gen-agent", graph["nodes"][4]["role_skill"])
+        self.assertNotIn("assignee", graph["nodes"][0])
         self.assertEqual(
             [
                 {"from": "task1", "to": "task2"},
@@ -146,17 +185,16 @@ class NoeticWorkflowIntegrationTest(unittest.TestCase):
         self.assertEqual("noetic-due-diligence", graph["skill"])
         self.assertEqual(5, len(graph["nodes"]))
         self.assertEqual("noetic-company-profile", graph["nodes"][0]["skill"])
-        self.assertEqual("worker", graph["nodes"][0]["assignee"])
         self.assertEqual("data", graph["nodes"][0]["role"])
         self.assertEqual("noetic-data-agent", graph["nodes"][0]["role_skill"])
         self.assertEqual(["noetic-data-agent", "noetic-karpathy-llm-wiki"], graph["nodes"][0]["required_skills"])
         self.assertIn("执行 Noetic 知识卡片：noetic-company-profile", graph["nodes"][0]["prompt"])
         self.assertIn("必需搭配 skill：noetic-karpathy-llm-wiki", graph["nodes"][0]["prompt"])
         self.assertEqual(["task1", "task2", "task3", "task4"], graph["nodes"][4]["parents"])
-        self.assertEqual("worker", graph["nodes"][4]["assignee"])
         self.assertEqual("gen", graph["nodes"][4]["role"])
         self.assertEqual("noetic-gen-agent", graph["nodes"][4]["role_skill"])
         self.assertEqual(["noetic-gen-agent"], graph["nodes"][4]["required_skills"])
+        self.assertNotIn("assignee", graph["nodes"][0])
         self.assertNotIn("hermes kanban create", result.stdout)
 
     def test_real_company_names_dry_run_for_all_entry_workflows(self) -> None:
@@ -207,7 +245,7 @@ class NoeticWorkflowIntegrationTest(unittest.TestCase):
             calls = [json.loads(line)["argv"] for line in log_path.read_text(encoding="utf-8").splitlines()]
             self.assertEqual(5, len(calls))
             self.assertEqual("noetic-company-profile", calls[0][calls[0].index("--skill") + 1])
-            self.assertTrue(all(call[call.index("--assignee") + 1] == "worker" for call in calls))
+            self.assertTrue(all("--assignee" not in call for call in calls))
             self.assertNotIn("--parent", calls[0])
             self.assertEqual(["h1"], parent_values(calls[1]))
             self.assertEqual(["h1"], parent_values(calls[2]))
@@ -282,41 +320,6 @@ class NoeticWorkflowIntegrationTest(unittest.TestCase):
                 self.assertEqual([first_id], parent_values(chunk[2]))
                 self.assertEqual([first_id], parent_values(chunk[3]))
                 self.assertEqual([f"h{index * 5 + offset}" for offset in range(1, 5)], parent_values(chunk[4]))
-
-    def test_apply_fails_before_creating_tasks_when_profiles_are_missing(self) -> None:
-        with tempfile.TemporaryDirectory() as temp:
-            temp_path = Path(temp)
-            log_path = temp_path / "hermes-calls.jsonl"
-            fake_hermes = temp_path / "hermes"
-            write_fake_hermes(fake_hermes, log_path, profiles=())
-
-            env = os.environ.copy()
-            env["PATH"] = f"{temp_path}{os.pathsep}{env.get('PATH', '')}"
-            result = subprocess.run(
-                [
-                    sys.executable,
-                    str(SCRIPT),
-                    "execute",
-                    "--mode",
-                    "planned",
-                    "--skill",
-                    "noetic-due-diligence",
-                    "--company",
-                    "小米科技有限责任公司",
-                    "--workspace",
-                    "dir:/tmp/noetic-run",
-                    "--apply",
-                ],
-                cwd=ROOT,
-                env=env,
-                text=True,
-                capture_output=True,
-            )
-
-            self.assertEqual(1, result.returncode)
-            self.assertIn("missing Hermes profile(s): worker", result.stderr)
-            self.assertIn("hermes profile create worker", result.stderr)
-            self.assertFalse(log_path.exists())
 
     def test_auto_dry_run_emits_single_triage_create(self) -> None:
         result = run_command(
@@ -420,23 +423,26 @@ class NoeticWorkflowIntegrationTest(unittest.TestCase):
             self.assertEqual(2, len(calls))
             self.assertEqual(["kanban", "dispatch"], calls[1])
 
-    def test_delegate_default_mode_outputs_subagent_plan(self) -> None:
-        result = run_command(
-            str(SCRIPT),
-            "execute",
-            "--skill",
-            "noetic-due-diligence",
-            "--company",
-            "杭州XX科技有限公司",
-            "--workspace",
-            "dir:/tmp/noetic-run",
+    def test_execute_requires_explicit_mode(self) -> None:
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPT),
+                "execute",
+                "--skill",
+                "noetic-due-diligence",
+                "--company",
+                "杭州XX科技有限公司",
+                "--workspace",
+                "dir:/tmp/noetic-run",
+            ],
+            cwd=ROOT,
+            text=True,
+            capture_output=True,
         )
-        graph = json.loads(result.stdout)
 
-        self.assertEqual("delegate", graph["mode"])
-        self.assertEqual("noetic-due-diligence", graph["skill"])
-        self.assertEqual(5, len(graph["nodes"]))
-        self.assertNotIn("hermes kanban create", result.stdout)
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("the following arguments are required: --mode", result.stderr)
 
     def test_planned_default_workspace_under_noeticai(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
@@ -555,16 +561,12 @@ class FakeEvent:
         self.text = text
 
 
-def write_fake_hermes(path: Path, log_path: Path, profiles: tuple[str, ...] = ("worker",)) -> None:
+def write_fake_hermes(path: Path, log_path: Path) -> None:
     path.write_text(
         f"""#!/usr/bin/env python3
 import json
 import sys
 from pathlib import Path
-
-profiles = {list(profiles)!r}
-if sys.argv[1:3] == ["profile", "show"]:
-    raise SystemExit(0 if len(sys.argv) > 3 and sys.argv[3] in profiles else 1)
 
 if sys.argv[1:3] == ["kanban", "dispatch"]:
     log = Path({str(log_path)!r})

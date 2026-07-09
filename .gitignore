@@ -4,3 +4,6 @@
 .vscode/
 .env
 __pycache__/
+graphify-out/
+.scratch/
+.graphify/
