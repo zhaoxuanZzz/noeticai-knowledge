@@ -21,3 +21,9 @@ rules:
   - 缺失信息必须进入 evidence_gaps
   - 所有判断必须能追溯到前置产物或用户提供资料
   - 如果前置产物缺失，先执行 references/workflow.yaml 的对应阶段
+
+gate:
+  handoff: required
+  final:
+    require_parent_artifacts: [company_profile, shareholder_structure, litigation_risk, financing_history]
+    require_report_handoff: true

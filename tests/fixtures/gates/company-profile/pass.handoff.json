@@ -1,0 +1,21 @@
+{
+  "skill_id": "noetic-company-profile",
+  "run_id": "run-test",
+  "role": "data",
+  "subject": "杭州示例科技有限公司",
+  "sources": [{"name": "qcc", "ref": "company/basic"}],
+  "data_as_of": "2026-07-10",
+  "wiki_writeback": {"status": "skipped", "paths": []},
+  "evidence_gaps": [],
+  "artifacts": {
+    "company_summary": {
+      "name": "杭州示例科技有限公司",
+      "status": "存续"
+    },
+    "industry_position": {"industry": "软件和信息技术服务业"},
+    "operating_status": {"status": "存续"},
+    "key_tags": ["科技"],
+    "risk_flags": [],
+    "evidence_gaps": []
+  }
+}

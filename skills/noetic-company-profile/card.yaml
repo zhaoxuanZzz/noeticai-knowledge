@@ -24,3 +24,33 @@ rules:
   - 不要编造工商或经营数据
   - 数据缺失时输出 evidence_gaps
   - 所有结论必须说明依据字段
+
+gate:
+  handoff: required
+  required_outputs:
+    - company_summary
+    - industry_position
+    - operating_status
+    - key_tags
+    - risk_flags
+    - evidence_gaps
+  required_meta:
+    - subject
+    - sources
+    - data_as_of
+    - evidence_gaps
+    - wiki_writeback
+    - run_id
+  artifact_checks:
+    evidence_gaps:
+      type: list
+    company_summary:
+      type: object_or_string
+      non_empty: true
+  behavior_checks:
+    - id: no_fabricated_empty_fill
+      when: missing_data
+      require: evidence_gaps_non_null
+    - id: data_role_no_final_report
+      when: role == data
+      forbid_keys: [final_report, due_diligence_report]

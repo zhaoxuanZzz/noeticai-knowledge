@@ -114,6 +114,15 @@ def register(ctx):
             ctx.register_skill(child.name, skill_md)
 
     ctx.register_hook("pre_gateway_dispatch", rewrite_gateway_command)
+    ctx.register_hook("pre_tool_call", _gate_before_kanban_complete)
+
+    if hasattr(ctx, "register_cli_command"):
+        ctx.register_cli_command(
+            name="noetic-gate",
+            help="Retry or waive a blocked Noetic Kanban gate",
+            setup_fn=_setup_gate_cli,
+            handler_fn=_run_gate_cli,
+        )
 
     for command in sorted(_skill_names()):
         skill_md = SKILLS_DIR / command / "SKILL.md"
@@ -123,3 +132,54 @@ def register(ctx):
             description=_command_description(skill_md, command),
             args_hint=_command_args_hint(skill_md),
         )
+
+
+def _gate_module():
+    scripts_dir = PLUGIN_DIR / "scripts"
+    if str(scripts_dir) not in sys.path:
+        sys.path.insert(0, str(scripts_dir))
+    import kanban_gate
+    return kanban_gate
+
+
+def _gate_before_kanban_complete(tool_name: str = "", args: Any = None, task_id: str = "", **_: Any):
+    if tool_name != "kanban_complete" or not task_id:
+        return None
+    try:
+        from hermes_cli import kanban_db
+        board = (args or {}).get("board") if isinstance(args, dict) else None
+        conn = kanban_db.connect(board=board)
+        try:
+            task = kanban_db.get_task(conn, task_id)
+        finally:
+            conn.close()
+        if task is None:
+            return None
+        result = _gate_module().gate_completion(task_id, task.body, board=board)
+        if result and result["status"] == "blocked":
+            return {"action": "block", "message": "Noetic gate blocked completion: " + "; ".join(result["errors"]) + ". A human must run `hermes noetic-gate retry` after repair or `hermes noetic-gate waive --reason ...`."}
+    except Exception as exc:
+        return {"action": "block", "message": f"Noetic gate failed closed: {exc}"}
+    return None
+
+
+def _setup_gate_cli(parser: Any) -> None:
+    parser.add_argument("action", choices=("retry", "waive"))
+    parser.add_argument("task_id")
+    parser.add_argument("--board")
+    parser.add_argument("--reason")
+
+
+def _run_gate_cli(args: Any) -> int:
+    from hermes_cli import kanban_db
+    conn = kanban_db.connect(board=args.board)
+    try:
+        task = kanban_db.get_task(conn, args.task_id)
+    finally:
+        conn.close()
+    if task is None:
+        raise ValueError(f"task not found: {args.task_id}")
+    gate = _gate_module()
+    result = gate.retry(args.task_id, task.body, board=args.board) if args.action == "retry" else gate.waive(args.task_id, task.body, args.reason or "", board=args.board)
+    print(json.dumps(result, ensure_ascii=False))
+    return 0

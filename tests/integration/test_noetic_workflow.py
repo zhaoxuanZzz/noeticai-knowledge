@@ -261,8 +261,37 @@ extra_top_level: keep-me
         self.assertEqual("gen", graph["nodes"][4]["role"])
         self.assertEqual("noetic-gen-agent", graph["nodes"][4]["role_skill"])
         self.assertEqual(["noetic-gen-agent"], graph["nodes"][4]["required_skills"])
+        self.assertTrue(graph["nodes"][0]["handoff_path"].endswith("noetic-company-profile/handoff.json"))
+        self.assertEqual("node", graph["nodes"][0]["node_gate"]["mode"])
+        self.assertIsNone(graph["nodes"][0]["final_gate"])
+        self.assertEqual("noetic-due-diligence", graph["nodes"][4]["final_gate"]["skill"])
         self.assertNotIn("assignee", graph["nodes"][0])
         self.assertNotIn("hermes kanban create", result.stdout)
+
+    def test_delegate_plan_carries_one_run_id_and_gate_commands(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            company_kb = Path(temp) / "company-kb"
+            env = os.environ.copy()
+            env["NOETICAI_COMPANY_KB_DIR"] = str(company_kb)
+            result = run_command(
+                str(SCRIPT),
+                "execute",
+                "--mode",
+                "delegate",
+                "--skill",
+                "noetic-due-diligence",
+                "--company",
+                "杭州XX科技有限公司",
+                "--run-id",
+                "run-gate-test",
+                env=env,
+            )
+        graph = json.loads(result.stdout)
+        self.assertEqual("run-gate-test", graph["run_id"])
+        self.assertIn("--run-id run-gate-test", graph["nodes"][0]["prompt"])
+        self.assertIn("artifacts/run-gate-test/noetic-company-profile/handoff.json", graph["nodes"][0]["prompt"])
+        self.assertIn("--mode final", graph["nodes"][4]["prompt"])
+        self.assertIn("--run-id run-gate-test", graph["nodes"][4]["prompt"])
 
     def test_real_company_names_dry_run_for_all_entry_workflows(self) -> None:
         for company in real_companies():
@@ -318,6 +347,35 @@ extra_top_level: keep-me
             self.assertEqual(["h1"], parent_values(calls[2]))
             self.assertEqual(["h1"], parent_values(calls[3]))
             self.assertEqual(["h1", "h2", "h3", "h4"], parent_values(calls[4]))
+
+    def test_planned_tasks_carry_run_id_and_gate_commands(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            temp_path = Path(temp)
+            log_path = temp_path / "hermes-calls.jsonl"
+            fake_hermes = temp_path / "hermes"
+            write_fake_hermes(fake_hermes, log_path)
+            env = os.environ.copy()
+            env["PATH"] = f"{temp_path}{os.pathsep}{env.get('PATH', '')}"
+            env["NOETICAI_COMPANY_KB_DIR"] = str(temp_path / "company-kb")
+            result = run_command(
+                str(SCRIPT),
+                "execute",
+                "--mode",
+                "planned",
+                "--skill",
+                "noetic-due-diligence",
+                "--company",
+                "杭州XX科技有限公司",
+                "--run-id",
+                "run-gate-test",
+                "--apply",
+                env=env,
+            )
+            calls = [json.loads(line)["argv"] for line in log_path.read_text(encoding="utf-8").splitlines()]
+        self.assertIn("run_id: run-gate-test", result.stdout)
+        bodies = [call[call.index("--body") + 1] for call in calls]
+        self.assertTrue(all("--run-id run-gate-test" in body for body in bodies))
+        self.assertIn("--mode final", bodies[-1])
 
     def test_apply_passes_tenant_to_every_planned_task(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
@@ -405,6 +463,7 @@ extra_top_level: keep-me
         self.assertIn("--triage", result.stdout)
         self.assertNotIn("--assignee", result.stdout)
         self.assertEqual(1, result.stdout.count("hermes kanban create"))
+        self.assertIn("does not guarantee static workflow gate compliance", result.stdout)
 
     def test_auto_apply_creates_triage_task(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
@@ -633,6 +692,9 @@ class FakeHermesCtx:
         self.commands[name] = handler
         self.command_descriptions[name] = description
         self.command_args_hints[name] = args_hint
+
+    def register_cli_command(self, *args, **kwargs) -> None:
+        pass
 
 
 class FakeEvent:

@@ -6,7 +6,7 @@
 
 插件是面向企业研究的专家包，包含原子 skill、编排型 skill，以及编排型 skill 内部的 workflow。它建立在多平台 skills plugin 结构之上，不替代各宿主需要的 manifest。
 
-首版只定义目录、静态引用和人工可读语义，不实现 workflow runner，不新增数据库模型，不改知识卡片执行链路。产物结构与质量约束由各 skill 的 `card.yaml` 和 `SKILL.md` 表达，不在本仓库做独立 eval。
+首版只定义目录、静态引用和人工可读语义，不实现 workflow runner，不新增数据库模型。产物结构由各 skill 的 `card.yaml` 和 `SKILL.md` 表达；声明了 `gate` 的 skill 由 `scripts/check_artifact_gate.py` 做运行时硬拦（见 `docs/superpowers/specs/2026-07-10-agent-quality-gate-design.md`）。
 
 ## 标准目录结构
 

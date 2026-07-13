@@ -57,7 +57,7 @@
 - 只综合父任务已经交接的 artifact。
 - 不重新取数，不补造缺失事实。
 - 发现关键 artifact 缺失或证据不足时，在报告里保留数据缺口，而不是扩大结论。
-- 质量约束由 `card.yaml` 的 `rules` 和 `SKILL.md` 表达；独立验收不在本仓库实现。
+- 质量约束由 `card.yaml` 的 `rules` / `gate` 和 `SKILL.md` 表达；声明了 `gate` 的 skill 由 `scripts/check_artifact_gate.py` 做运行时硬拦。
 
 ## 现有卡片结构
 

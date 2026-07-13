@@ -1,7 +1,7 @@
 # Agent 运行时质量门禁设计
 
 日期：2026-07-10  
-状态：待实现  
+状态：已实现（v1，含编排 run 隔离）
 范围：NoeticAI Work Suite 插件内的 Agent 运行时产物门禁
 
 ## 1. 背景与目标
@@ -11,7 +11,7 @@
 本设计要补上 **Agent 运行时质量门禁**：
 
 - 每个 data/gen 节点完成后硬拦：不过关不交接下游
-- 编排型流程终局总检：接口先定义，v1 试点可不跑尽调全链路
+- 编排型流程终局总检：企业尽调与投资分析按本次 run 隔离校验
 - 以确定性产物检查为主，行为边界只做少量可判定规则
 - **脚本是唯一硬门禁**；skill 只约定「先写可检查产物，再跑脚本」
 
@@ -58,7 +58,7 @@ card.yaml (outputs + gate)
 1. Agent 按业务 skill 执行，写出 `handoff.json`（及可选 `report.md`）
 2. Agent 调用 `check_artifact_gate.py --mode node ...`
 3. exit code `0` 才可标记任务完成并交接；非 `0` 则失败，不启动下游
-4. 编排型流程全部节点通过后，可再跑 `--mode final`（v1 接口预留）
+4. 编排型流程的报告节点通过 node gate 后，运行 `--mode final` 收口；Hermes 完成状态的自动拦截仍由宿主钩子负责。
 
 ## 4. `card.yaml` 的 `gate` 契约
 
@@ -84,6 +84,7 @@ card.yaml (outputs + gate)
 - `data_as_of`
 - `evidence_gaps`
 - `wiki_writeback`
+- `run_id`（编排运行必填，用于隔离重跑和并发）
 
 ### 4.3 `artifact_checks` 类型枚举（v1）
 
@@ -145,6 +146,7 @@ gate:
 
 ```yaml
 gate:
+  handoff: required
   final:
     require_parent_artifacts: [company_profile, shareholder_structure, litigation_risk, financing_history]
     require_report_handoff: true
@@ -156,18 +158,21 @@ gate:
 
 ### 5.1 路径
 
-相对任务工作目录：
+与企业信息库同根（`NOETICAI_COMPANY_KB_DIR`，未设置时为 `~/.noeticai/company-knowledge`），与 `raw/`、`wiki/` 并列：
 
 ```text
-<workspace>/<run-id>/artifacts/<skill-id>/handoff.json
-<workspace>/<run-id>/artifacts/<skill-id>/report.md   # 可选
+<company-kb>/artifacts/<run-id>/<skill-id>/handoff.json
+<company-kb>/artifacts/<run-id>/<skill-id>/report.md   # 可选
 ```
+
+终局模式的 `--run-dir` 即该 `<company-kb>` 根目录。
 
 ### 5.2 `handoff.json` 最小形状
 
 ```json
 {
   "skill_id": "noetic-company-profile",
+  "run_id": "run-20260710-example-a1b2c3d4",
   "role": "data",
   "subject": "杭州XX科技有限公司",
   "sources": [{"name": "...", "ref": "..."}],
@@ -204,12 +209,14 @@ python3 scripts/check_artifact_gate.py \
   --mode node \
   --skill noetic-company-profile \
   --handoff <path>/handoff.json \
+  --run-id <run-id> \
   [--plugin-root .]
 
 python3 scripts/check_artifact_gate.py \
   --mode final \
   --skill noetic-due-diligence \
-  --run-dir <workspace>/<run-id> \
+  --run-dir <company-kb> \
+  --run-id <run-id> \
   [--plugin-root .]
 ```
 
@@ -233,15 +240,14 @@ python3 scripts/check_artifact_gate.py \
 ### 6.4 终局模式（v1）
 
 - 若编排型 skill 无 `gate` 或无 `gate.final`：skip 通过并提示（与无 gate 的 node 模式一致），不 exit 2
-- 若有 `gate.final`：检查 `require_parent_artifacts` 对应 handoff 文件存在；若 `require_report_handoff: true`，检查报告 skill 的 `handoff.json` 存在
-- v1 终局模式只做「文件存在 + 可解析 JSON」；不重复跑完整 node 规则集（避免未铺 gate 的父节点误杀）
-- 完整尽调终局用例不作为 v1 必达；接口与上述最小实现即可
+- 若有 `gate.final`：检查 `<company-kb>/artifacts/<run-id>/` 下 `require_parent_artifacts` 对应 handoff 文件存在、可解析且 `run_id` 一致；若 `require_report_handoff: true`，同样检查报告 skill handoff
+- final 不重复运行父节点的完整 node 规则集，避免未铺 gate 的父节点误杀
 
 ## 7. Agent 侧约定
 
 更新 `noetic-data-agent`（及试点业务 skill 如需要）执行规则：
 
-1. 先写 `handoff.json`（+ 可选 `report.md`）
+1. 先写 `<run-id>` 隔离目录下的 `handoff.json`（+ 可选 `report.md`），并在顶层写入相同 `run_id`
 2. 再运行 `check_artifact_gate.py --mode node ...`
 3. 非 0 则任务失败：不声明完成、不交接下游
 
@@ -268,7 +274,7 @@ python3 scripts/check_artifact_gate.py \
 | --- | --- |
 | 契约 | 合法/非法 `gate` 的 card fixture → validator |
 | 门禁 | `tests/fixtures/gates/company-profile/`：pass、缺字段、空 `company_summary`、data 角色带 `final_report` |
-| 集成 | 对 fixture 断言 `check_artifact_gate.py` 的 exit code |
+| 集成 | 覆盖 node run-id 缺失/不匹配、final 父 handoff 缺失/非法 JSON/不匹配/完整通过 |
 
 不依赖真实 MCP 或企业数据。
 
@@ -279,7 +285,8 @@ python3 scripts/check_artifact_gate.py \
 3. 为 `noetic-company-profile/card.yaml` 增加 `gate`
 4. 更新 `noetic-data-agent`（必要时业务 skill）的先写后检约定
 5. 扩展 `validate_work_suite` + fixture 测试
-6. 更新 `AGENTS.md` 与相关 docs：有 `gate` 的 skill 必须过脚本
+6. 为尽调和投资分析报告 card 声明 final gate，并由 workflow 任务正文传递 run-id、node/final 命令
+7. 更新 `AGENTS.md` 与相关 docs：有 `gate` 的编排节点必须过脚本
 
 ## 11. 成功标准
 

@@ -23,6 +23,8 @@ Three layers, all under the active knowledge-base root:
 - `wiki/index.md` — Global index. One row per article, grouped by topic, with link + summary + Updated date.
 - `wiki/log.md` — Append-only operation log.
 
+**artifacts/** — NoeticAI runtime handoff outputs (`artifacts/<skill-id>/handoff.json`), co-located with `raw/` and `wiki/` under the same knowledge-base root. Managed by data/gen agents and checked by `scripts/check_artifact_gate.py`.
+
 **SKILL.md** (this file) — Schema layer. Defines structure and workflow rules.
 
 Templates live in `references/` relative to this file. Read them when you need the exact format for raw files, articles, archive pages, or the index.

@@ -261,11 +261,22 @@ def validate_hermes_mcp(root: Path, plugin_yaml: Path, mcp_json: Path) -> list[s
     return errors
 
 
+def _load_card_gate():
+    scripts_dir = Path(__file__).resolve().parent
+    if str(scripts_dir) not in sys.path:
+        sys.path.insert(0, str(scripts_dir))
+    from card_gate import load_card, validate_card_gate
+
+    return load_card, validate_card_gate
+
+
 def validate_work_suite(root: Path) -> list[str]:
     errors: list[str] = []
     skills_dir = root / "skills"
     names = skill_names(root, errors)
+    load_card, validate_card_gate = _load_card_gate()
 
+    workflow_stages: dict[str, list[dict[str, object]]] = {}
     for workflow in sorted(skills_dir.glob("*/references/workflow.yaml")):
         try:
             stages = parse_workflow(workflow)
@@ -273,6 +284,7 @@ def validate_work_suite(root: Path) -> list[str]:
             errors.append(str(exc))
             continue
 
+        workflow_stages[workflow.parent.parent.name] = stages
         available_outputs: set[str] = set()
         for index, stage in enumerate(stages, 1):
             stage_id = stage["id"]
@@ -289,6 +301,21 @@ def validate_work_suite(root: Path) -> list[str]:
 
             if "skills" not in stage:
                 errors.append(f"{workflow}: stage {index} ({stage_id}): skills is required")
+
+    for card_path in sorted(skills_dir.glob("*/card.yaml")):
+        skill_id = card_path.parent.name
+        try:
+            card = load_card(card_path)
+        except Exception as exc:
+            errors.append(str(exc))
+            continue
+        errors.extend(
+            validate_card_gate(
+                card_path,
+                card=card,
+                stages=workflow_stages.get(skill_id),
+            )
+        )
 
     return errors
 
@@ -392,6 +419,75 @@ stages:
 """,
         )
         assert any("is not produced by a previous stage" in error for error in validate(bad_input))
+
+        ok_gate = base / "ok-gate"
+        make_suite(ok_gate)
+        write(
+            ok_gate / "skills" / "research" / "card.yaml",
+            """id: research
+outputs:
+  - context
+gate:
+  handoff: required
+  required_outputs:
+    - context
+  required_meta:
+    - subject
+  artifact_checks:
+    context:
+      type: object_or_string
+      non_empty: true
+  behavior_checks:
+    - id: no_fabricated_empty_fill
+""",
+        )
+        assert validate(ok_gate) == []
+
+        bad_gate = base / "bad-gate"
+        make_suite(bad_gate)
+        write(
+            bad_gate / "skills" / "research" / "card.yaml",
+            """id: research
+outputs:
+  - context
+gate:
+  handoff: required
+  required_outputs:
+    - missing_output
+""",
+        )
+        bad_errors = validate(bad_gate)
+        assert any("required_outputs must be subset" in error for error in bad_errors)
+
+        bad_meta = base / "bad-meta"
+        make_suite(bad_meta)
+        write(
+            bad_meta / "skills" / "research" / "card.yaml",
+            """id: research
+outputs:
+  - context
+gate:
+  handoff: required
+  required_meta:
+    - not_a_meta_field
+""",
+        )
+        assert any("required_meta not in whitelist" in error for error in validate(bad_meta))
+
+        bad_behavior = base / "bad-behavior"
+        make_suite(bad_behavior)
+        write(
+            bad_behavior / "skills" / "research" / "card.yaml",
+            """id: research
+outputs:
+  - context
+gate:
+  handoff: required
+  behavior_checks:
+    - id: unknown_behavior
+""",
+        )
+        assert any("unknown_behavior" in error for error in validate(bad_behavior))
 
     print("self-test ok")
     return 0

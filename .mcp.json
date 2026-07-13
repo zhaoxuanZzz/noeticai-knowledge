@@ -2,23 +2,28 @@
   "mcpServers": {
     "qcc-company": {
       "type": "http",
-      "url": "https://agent.qcc.com/mcp/company/stream"
+      "url": "https://agent.qcc.com/mcp/company/stream",
+      "bearer_token_env_var": "QCC_MCP_TOKEN"
     },
     "qcc-risk": {
       "type": "http",
-      "url": "https://agent.qcc.com/mcp/risk/stream"
+      "url": "https://agent.qcc.com/mcp/risk/stream",
+      "bearer_token_env_var": "QCC_MCP_TOKEN"
     },
     "qcc-ipr": {
       "type": "http",
-      "url": "https://agent.qcc.com/mcp/ipr/stream"
+      "url": "https://agent.qcc.com/mcp/ipr/stream",
+      "bearer_token_env_var": "QCC_MCP_TOKEN"
     },
     "qcc-operation": {
       "type": "http",
-      "url": "https://agent.qcc.com/mcp/operation/stream"
+      "url": "https://agent.qcc.com/mcp/operation/stream",
+      "bearer_token_env_var": "QCC_MCP_TOKEN"
     },
     "qcc-executive": {
       "type": "http",
-      "url": "https://agent.qcc.com/mcp/executive/stream"
+      "url": "https://agent.qcc.com/mcp/executive/stream",
+      "bearer_token_env_var": "QCC_MCP_TOKEN"
     }
   }
 }
