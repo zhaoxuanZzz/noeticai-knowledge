@@ -367,9 +367,124 @@ judge_low_confidence
 
 CI 分层执行：
 
-- 常规 CI：全部契约案例和不依赖外部访问的业务快照。
-- 定期评估：同一离线基准集的完整报告，可容纳已登记的能力缺口，但不能新增未登记偏差。
+- 常规 CI：运行 `ci` profile，只执行契约案例和确定性语义案例；纯 Judge 案例只校验 fixture 形态，不调用模型。
+- 定期评估：运行 `semantic` profile，对同一离线基准集执行完整 Judge；可容纳已登记的能力缺口，但不能新增未登记偏差。
 - 在线刷新：独立任务，不作为普通 PR 的通过条件。
+
+### 10.1 命令入口
+
+常规 CI：
+
+```bash
+python3 scripts/evaluate_gate_dataset.py \
+  --dataset tests/fixtures/gate-dataset \
+  --profile ci
+```
+
+完整语义评估：
+
+```bash
+python3 scripts/evaluate_gate_dataset.py \
+  --dataset tests/fixtures/gate-dataset \
+  --profile semantic \
+  --judge-adapter /absolute/path/to/cws-gate-judge
+```
+
+`--judge-adapter` 必须是单个可执行文件的绝对路径。Runner 使用参数数组直接启动进程，不经过 shell，也不接受包含管道、重定向或额外 shell 参数的命令字符串。模型、endpoint 和认证信息由 adapter 自己的环境或宿主配置提供。
+
+### 10.2 JSONL Judge adapter 协议
+
+Runner 为一次评估启动一个长驻 adapter 子进程，通过 stdin/stdout 逐行交换 JSON。协议版本固定为 `cws-gate-judge/v1`；每个请求必须得到一条带相同 `request_id` 的响应。
+
+请求示例：
+
+```json
+{
+  "protocol_version": "cws-gate-judge/v1",
+  "request_id": "eval-20260713-case-001",
+  "case_id": "conflicting-sources",
+  "evaluator_id": "company-profile-semantic-v1",
+  "rubric_id": "company-profile-v1",
+  "input": {
+    "subject": {
+      "name": "示例公司",
+      "unified_social_credit_code": "91330100TEST000001"
+    },
+    "raw_summaries": [{
+      "source_id": "s1",
+      "facts": {"operating_status": "存续"}
+    }],
+    "evidence": {
+      "evidence": [{
+        "id": "e1",
+        "field": "operating_status",
+        "value": "存续",
+        "source_id": "s1"
+      }],
+      "claims": [{
+        "artifact_path": "artifacts.operating_status.status",
+        "value": "存续",
+        "evidence_refs": ["e1"]
+      }]
+    },
+    "handoff": {
+      "artifacts": {"operating_status": {"status": "存续"}}
+    },
+    "parent_handoffs": [],
+    "report": "该企业当前登记状态为存续。"
+  }
+}
+```
+
+请求中不包含 `expected_decision`、`expected_reasons` 或其他标准答案，避免 Judge 标签泄漏。Runner 在发送前完成路径约束、来源哈希、JSON 形态和确定性规则检查；adapter 只接收最小化、冻结后的语义评审包，不自行读取案例目录，也不得访问企业数据源或联网检索外部事实。Adapter 可以访问其配置的模型 endpoint。
+
+响应示例：
+
+```json
+{
+  "protocol_version": "cws-gate-judge/v1",
+  "request_id": "eval-20260713-case-001",
+  "decision": "needs_review",
+  "confidence": 0.71,
+  "model": "semantic-judge-model-v1",
+  "rubric_version": "company-profile-v1",
+  "findings": [{
+    "reason": "source_conflict_not_disclosed",
+    "artifact_path": "artifacts.company_summary.status",
+    "evidence_refs": ["e1", "e2"]
+  }]
+}
+```
+
+Judge 只能返回 `passed` 或 `needs_review`；`blocked` 只由确定性 evaluator 产生。响应必须通过 schema 校验，finding 必须带稳定原因码和可解析的 artifact/evidence 引用。
+
+每个请求默认超时 120 秒，可用 `--judge-timeout-seconds` 在 1 至 600 秒之间显式覆盖。评估模式下，adapter 启动失败、超时、异常退出、输出非 JSON、协议版本不匹配或请求响应错位属于基础设施错误，整次命令 exit 2。真实任务运行时遇到同类故障则 fail closed 为 `needs_review`，不能因 Judge 不可用而自动放行。
+
+### 10.3 报告与退出码
+
+默认输出到 `.scratch/gate-eval/<eval-id>/`：
+
+```text
+.scratch/gate-eval/<eval-id>/
+├── results.json
+├── report.md
+├── false-accepts.json
+├── false-rejects.json
+├── needs-review.json
+└── drift.json
+```
+
+`results.json` 记录案例输入摘要哈希、预期决策、实际决策、原因码、确定性检查器版本、Judge model/rubric 版本和耗时。报告不得包含认证信息或未最小化的受限来源原文。
+
+退出码：
+
+| code | 含义 |
+| --- | --- |
+| `0` | 没有非预期偏差 |
+| `1` | 出现新的误放行、误拦截、待复核漏报或其他未登记回归 |
+| `2` | 数据集、配置、协议或 adapter 基础设施错误 |
+
+显式标记为 `capability_gap: true` 的已知偏差单独统计，默认不导致 exit 1；任何新增偏差或已有偏差扩大都必须失败。`ci` profile 不把未执行的纯 Judge 案例记为通过，而是记为 `not_run`。
 
 ## 11. 在线刷新
 
@@ -385,6 +500,24 @@ CI 分层执行：
   -> 生成漂移报告
   -> 人工审核
   -> 提升为新的版本化基准
+```
+
+刷新命令：
+
+```bash
+python3 scripts/refresh_gate_dataset.py \
+  --manifest tests/fixtures/gate-dataset/refresh/companies.json \
+  --output ~/.cws/gate-dataset-staging/2026-07-13
+```
+
+刷新完成后，使用相同 runner 比较 staging 与仓库基准：
+
+```bash
+python3 scripts/evaluate_gate_dataset.py \
+  --dataset ~/.cws/gate-dataset-staging/2026-07-13 \
+  --baseline tests/fixtures/gate-dataset \
+  --profile semantic \
+  --judge-adapter /absolute/path/to/cws-gate-judge
 ```
 
 约束：
