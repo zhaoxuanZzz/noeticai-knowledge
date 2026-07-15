@@ -1,0 +1,59 @@
+{
+  "facts": {
+    "established_at": "2001-06-05",
+    "industry": "其他科技推广服务业",
+    "legal_representative": "梁志祥",
+    "listing": "北京百度网讯科技有限公司本身无直接上市记录。母公司百度集团为 NASDAQ: BIDU / HKEX: 9888 双上市公司。",
+    "name": "北京百度网讯科技有限公司",
+    "registered_capital": "1342128万元",
+    "risk_scan": {
+      "clean_core": [
+        "失信信息",
+        "被执行人",
+        "限制高消费",
+        "终本案件",
+        "行政处罚",
+        "经营异常",
+        "严重违法",
+        "环保处罚",
+        "税务非正常户",
+        "欠税公告",
+        "税收违法"
+      ],
+      "factors_clean": 28,
+      "factors_with_records": 7,
+      "records": {
+        "开庭公告": 7466,
+        "法院公告": 690,
+        "立案信息": 7254,
+        "股权出质": 7,
+        "裁判文书": 11559,
+        "诉前调解": 58,
+        "送达公告": 245
+      },
+      "total_factors": 35
+    },
+    "shareholders": [
+      {
+        "date": "2021-06-03",
+        "name": "李彦宏",
+        "ratio": "99.50%",
+        "subscribed": "1335417.36万元"
+      },
+      {
+        "date": "2021-06-03",
+        "name": "崔珊珊",
+        "ratio": "0.50%",
+        "subscribed": "6710.64万元"
+      }
+    ],
+    "status": "存续（在营、开业、在册）",
+    "unified_social_credit_code": "91110000802100433B"
+  },
+  "observed_at": "2026-07-07",
+  "source_id": "profile",
+  "subject": {
+    "name": "北京百度网讯科技有限公司",
+    "unified_social_credit_code": "91110000802100433B"
+  }
+}

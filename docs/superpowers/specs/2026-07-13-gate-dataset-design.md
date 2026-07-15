@@ -4,6 +4,8 @@
 
 状态：设计已确认
 
+实现状态：已落地离线 runner、node/final 确定性 evidence gate、JSONL Judge adapter、首批 node/final fixture、staging 刷新、历史知识库导入、冻结 KB delegate 模式和人工审核后提升流程。四家真实企业候选 bundle 已生成在仓库外 staging，等待人工批准标签后提升。
+
 范围：`cws-company-profile` 节点 gate 与 `cws-due-diligence` final gate 的首批验证数据集
 
 ## 1. 背景
@@ -355,6 +357,8 @@ judge_low_confidence
 6. 记录 `expected_decision`、实际决策、标准化原因码、Judge 版本和能力缺口。
 7. 输出 JSON 明细与终端摘要。
 
+当前案例入口为 `tests/fixtures/gate-dataset/cases.json`。结构变体使用 RFC 7396 merge patch；业务案例引用冻结 raw、`evidence.json` 与 SHA-256 摘要。真实 node gate 同样读取 `handoff.json` 同目录的 `evidence.json`，缺失或确定性规则失败时 exit code 为 1。
+
 指标至少包含：
 
 - 总案例数与按标签覆盖率。
@@ -520,6 +524,8 @@ python3 scripts/evaluate_gate_dataset.py \
   --judge-adapter /absolute/path/to/cws-gate-judge
 ```
 
+刷新 manifest 可用 `baseline_dataset` 生成完整、可直接回放的 staging 副本；`snapshot_file` 只作为已抓取候选输入，刷新脚本会执行敏感字段扫描和字段白名单最小化，再按 `target_file` 写入 staging。没有 `snapshot_file` 的主体记录为 `awaiting_capture`，不会伪造候选数据。
+
 约束：
 
 - 在线任务不得直接覆盖 `tests/fixtures/gate-dataset/business/`。
@@ -532,16 +538,12 @@ python3 scripts/evaluate_gate_dataset.py \
 
 ## 12. 当前能力缺口的处理
 
-数据集先表达正确业务期望，不迁就当前检查器能力。预期会首先暴露以下误放行：
+数据集先表达正确业务期望，不迁就当前检查器能力。确定性 evaluator 已覆盖 evidence 缺失、来源路径和值不一致、主体 ID 不一致、过期或冲突未披露、否定结论检索范围不足、跨主体 final 与父 gate 已阻断。剩余能力缺口主要是：
 
-- 主体歧义或名称与信用代码不一致。
-- 来源冲突未披露。
-- 数据过期未披露。
-- 父 handoff 属于同一 run，但实际是另一家公司。
-- final 报告遗漏父节点的重大风险或 `evidence_gaps`。
-- final 只检查父 handoff 存在，却没有验证父 gate 是否通过。
-- handoff 缺少 claim-level evidence，无法确定性判断结论是否有来源支持。
-- 当前没有固定 rubric、结构化输出和版本锁定的 LLM Judge。
+- 只有名称、没有稳定主体 ID 时的同名歧义仍需上游主体解析或人工确认。
+- final 报告的自然语言遗漏、曲解和建议过度外推依赖外部 Judge adapter。
+- 当前 runtime node/final gate 已执行确定性 evidence 检查，但尚未直接启动模型 Judge；模型不可用时的 `needs_review` 状态由宿主接入层实现。
+- 在线抓取由宿主或定时任务完成；刷新脚本只接收已抓取快照，负责最小化、敏感字段检查、staging 和漂移对比。
 
 这些案例标记为 `capability_gap: true`。后续增强 gate 时逐项转为普通回归案例；不能删除失败样本来提高通过率。
 
@@ -596,3 +598,28 @@ python3 scripts/evaluate_gate_dataset.py \
 - 当前语义能力缺口被明确列出，且不会导致普通回归被误判为成功。
 - 在线刷新不能直接修改基准；基准提升需要人工审核。
 - 测试报告能分别展示误放行、误拦截、能力缺口和数据漂移。
+
+## 15. 历史企业知识库导入与提升
+
+首批历史导入清单位于 `tests/fixtures/gate-dataset/import/companies.json`，覆盖小米科技、比亚迪、宁德时代和北京百度网讯。原知识库始终只读，导入输出必须位于仓库外空 staging：
+
+```bash
+python3 scripts/import_gate_kb_snapshots.py \
+  --kb-root ~/.cws/company-knowledge \
+  --manifest tests/fixtures/gate-dataset/import/companies.json \
+  --output ~/.cws/gate-dataset-staging/<capture-id>
+```
+
+导入清单通过 JSON Pointer 明确选择公开字段。导入器扫描完整源 JSON 中的敏感键，但只把声明字段写入标准化 `{subject, source_id, observed_at, facts}` 快照；查询脚本、完整历史响应和 wiki 文章不会进入最终 fixture。每家公司获得独立 `companies/<case-id>/kb`，可直接作为冻结执行的 `CWS_COMPANY_KB_DIR`。
+
+冻结执行使用 `--frozen-kb`。该标志写入 delegate graph、节点 prompt 和 `workflow-state.json`，禁止 MCP、网络补查和 wiki 回写；缺失信息必须进入 `evidence_gaps`。节点实际使用的最小来源复制到自身 artifact 目录的 `raw/`，确保 `evidence.source_ref` 不逃逸 handoff 目录。
+
+staging 的 `review.json` 初始状态为 `pending`。审核者需要确认主体、来源、expected/current decision、原因码和质量状态，将案例改为 `approved` 后才能运行：
+
+```bash
+python3 scripts/promote_gate_dataset.py \
+  --staging ~/.cws/gate-dataset-staging/<capture-id> \
+  --dataset tests/fixtures/gate-dataset
+```
+
+提升器重新验证哈希、路径、敏感字段、案例唯一性和标签完整性，并通过临时数据集副本完成替换。一个真实 workflow bundle 可以通过 `bundle_id` 同时承载 node 与 final 案例，不重复保存整套产物。任何未批准案例或校验失败都会在修改基准前退出。

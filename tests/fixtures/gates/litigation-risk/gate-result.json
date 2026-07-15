@@ -1,0 +1,18 @@
+{
+  "skill_id": "cws-litigation-risk",
+  "mode": "node",
+  "run_id": "run-test",
+  "decision": "passed",
+  "status": "passed",
+  "exit_code": 0,
+  "errors": [],
+  "judge": {
+    "protocol_version": "cws-gate-judge/v1",
+    "request_id": "runtime-cws-litigation-risk-0f88ccb491df",
+    "decision": "passed",
+    "confidence": 0.92,
+    "model": "mock-judge",
+    "rubric_version": "litigation-risk-v1",
+    "findings": []
+  }
+}

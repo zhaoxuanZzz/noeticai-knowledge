@@ -1,0 +1,733 @@
+{
+  "cases": [
+    {
+      "case_id": "schema-pass",
+      "kind": "node",
+      "skill_id": "cws-company-profile",
+      "run_id": "run-dataset",
+      "base": "schema/base/company-profile.handoff.json",
+      "expected_decision": "passed",
+      "quality_state": "complete",
+      "expected_reasons": [],
+      "tags": [
+        "schema",
+        "node",
+        "baseline"
+      ]
+    },
+    {
+      "case_id": "schema-missing-summary",
+      "kind": "node",
+      "skill_id": "cws-company-profile",
+      "run_id": "run-dataset",
+      "base": "schema/base/company-profile.handoff.json",
+      "patch": "schema/patches/missing-summary.json",
+      "expected_decision": "blocked",
+      "quality_state": "invalid",
+      "expected_reasons": [
+        "required_output_missing"
+      ],
+      "tags": [
+        "schema",
+        "node",
+        "missing-output"
+      ]
+    },
+    {
+      "case_id": "schema-empty-summary",
+      "kind": "node",
+      "skill_id": "cws-company-profile",
+      "run_id": "run-dataset",
+      "base": "schema/base/company-profile.handoff.json",
+      "patch": "schema/patches/empty-summary.json",
+      "expected_decision": "blocked",
+      "quality_state": "invalid",
+      "expected_reasons": [
+        "required_output_empty"
+      ],
+      "tags": [
+        "schema",
+        "node",
+        "empty-output"
+      ]
+    },
+    {
+      "case_id": "schema-data-role-final-report",
+      "kind": "node",
+      "skill_id": "cws-company-profile",
+      "run_id": "run-dataset",
+      "base": "schema/base/company-profile.handoff.json",
+      "patch": "schema/patches/data-role-final-report.json",
+      "expected_decision": "blocked",
+      "quality_state": "invalid",
+      "expected_reasons": [
+        "data_role_contains_final_report"
+      ],
+      "tags": [
+        "schema",
+        "node",
+        "role"
+      ]
+    },
+    {
+      "case_id": "schema-cross-run",
+      "kind": "node",
+      "skill_id": "cws-company-profile",
+      "run_id": "run-dataset",
+      "base": "schema/base/company-profile.handoff.json",
+      "patch": "schema/patches/run-id-mismatch.json",
+      "expected_decision": "blocked",
+      "quality_state": "invalid",
+      "expected_reasons": [
+        "run_id_mismatch"
+      ],
+      "tags": [
+        "schema",
+        "node",
+        "isolation"
+      ]
+    },
+    {
+      "case_id": "schema-handoff-missing",
+      "kind": "node",
+      "skill_id": "cws-company-profile",
+      "run_id": "run-dataset",
+      "handoff": "schema/invalid/missing.handoff.json",
+      "expected_decision": "blocked",
+      "quality_state": "invalid",
+      "expected_reasons": [
+        "handoff_missing"
+      ],
+      "tags": [
+        "schema",
+        "node",
+        "file"
+      ]
+    },
+    {
+      "case_id": "schema-handoff-invalid-json",
+      "kind": "node",
+      "skill_id": "cws-company-profile",
+      "run_id": "run-dataset",
+      "handoff": "schema/invalid/invalid-json.handoff.json",
+      "expected_decision": "blocked",
+      "quality_state": "invalid",
+      "expected_reasons": [
+        "handoff_invalid_json"
+      ],
+      "tags": [
+        "schema",
+        "node",
+        "file"
+      ]
+    },
+    {
+      "case_id": "schema-handoff-list-root",
+      "kind": "node",
+      "skill_id": "cws-company-profile",
+      "run_id": "run-dataset",
+      "handoff": "schema/invalid/list-root.handoff.json",
+      "expected_decision": "blocked",
+      "quality_state": "invalid",
+      "expected_reasons": [
+        "gate_contract_failed"
+      ],
+      "tags": [
+        "schema",
+        "node",
+        "file"
+      ]
+    },
+    {
+      "case_id": "semantic-evidence-pass",
+      "kind": "node",
+      "skill_id": "cws-company-profile",
+      "run_id": "run-dataset",
+      "base": "schema/base/company-profile.handoff.json",
+      "evidence": "business/shared/evidence-pass.json",
+      "case_root": "business/shared",
+      "evaluation_at": "2026-07-13",
+      "source_hashes": {
+        "business/shared/raw/company.json": "sha256:35385ee34892afd042031ec381670b2dde50690bdee45516554be22c03ef6567"
+      },
+      "expected_decision": "passed",
+      "quality_state": "complete",
+      "expected_reasons": [],
+      "tags": [
+        "business",
+        "node",
+        "semantic"
+      ]
+    },
+    {
+      "case_id": "semantic-unsupported-claim",
+      "kind": "node",
+      "skill_id": "cws-company-profile",
+      "run_id": "run-dataset",
+      "base": "schema/base/company-profile.handoff.json",
+      "evidence": "business/shared/evidence-missing.json",
+      "case_root": "business/shared",
+      "evaluation_at": "2026-07-13",
+      "source_hashes": {
+        "business/shared/raw/company.json": "sha256:35385ee34892afd042031ec381670b2dde50690bdee45516554be22c03ef6567"
+      },
+      "expected_decision": "blocked",
+      "quality_state": "invalid",
+      "expected_reasons": [
+        "evidence_missing"
+      ],
+      "tags": [
+        "business",
+        "node",
+        "fabrication"
+      ]
+    },
+    {
+      "case_id": "semantic-partial-data-disclosed",
+      "kind": "node",
+      "skill_id": "cws-company-profile",
+      "run_id": "run-dataset",
+      "base": "schema/base/company-profile.handoff.json",
+      "patch": "schema/patches/missing-disclosed.json",
+      "evidence": "business/shared/evidence-pass.json",
+      "case_root": "business/shared",
+      "evaluation_at": "2026-07-13",
+      "source_hashes": {
+        "business/shared/raw/company.json": "sha256:35385ee34892afd042031ec381670b2dde50690bdee45516554be22c03ef6567"
+      },
+      "expected_decision": "passed",
+      "quality_state": "degraded",
+      "expected_reasons": [],
+      "tags": [
+        "business",
+        "node",
+        "missing-data"
+      ]
+    },
+    {
+      "case_id": "semantic-cross-subject",
+      "kind": "node",
+      "skill_id": "cws-company-profile",
+      "run_id": "run-dataset",
+      "base": "schema/base/company-profile.handoff.json",
+      "evidence": "business/shared/evidence-subject-mismatch.json",
+      "case_root": "business/shared",
+      "source_hashes": {
+        "business/shared/raw/company.json": "sha256:35385ee34892afd042031ec381670b2dde50690bdee45516554be22c03ef6567"
+      },
+      "expected_decision": "blocked",
+      "quality_state": "invalid",
+      "expected_reasons": [
+        "subject_identity_mismatch"
+      ],
+      "tags": [
+        "business",
+        "node",
+        "subject"
+      ]
+    },
+    {
+      "case_id": "semantic-conflict-undisclosed",
+      "kind": "node",
+      "skill_id": "cws-company-profile",
+      "run_id": "run-dataset",
+      "base": "schema/base/company-profile.handoff.json",
+      "evidence": "business/shared/evidence-conflict.json",
+      "case_root": "business/shared",
+      "source_hashes": {
+        "business/shared/raw/company.json": "sha256:35385ee34892afd042031ec381670b2dde50690bdee45516554be22c03ef6567"
+      },
+      "expected_decision": "blocked",
+      "quality_state": "invalid",
+      "expected_reasons": [
+        "source_conflict_not_disclosed"
+      ],
+      "tags": [
+        "business",
+        "node",
+        "source-conflict"
+      ]
+    },
+    {
+      "case_id": "semantic-conflict-omitted",
+      "kind": "node",
+      "skill_id": "cws-company-profile",
+      "run_id": "run-dataset",
+      "base": "schema/base/company-profile.handoff.json",
+      "evidence": "business/shared/evidence-conflict-omitted.json",
+      "case_root": "business/shared",
+      "source_hashes": {
+        "business/shared/raw/company.json": "sha256:35385ee34892afd042031ec381670b2dde50690bdee45516554be22c03ef6567",
+        "business/shared/raw/company-conflict.json": "sha256:db772525ff5a1b6c6ded5f7c4daff68b8ca3660772362225fbce12bb489b8fd9"
+      },
+      "expected_decision": "blocked",
+      "quality_state": "invalid",
+      "expected_reasons": [
+        "source_conflict_not_disclosed"
+      ],
+      "tags": [
+        "business",
+        "node",
+        "source-conflict",
+        "omitted-disclosure"
+      ]
+    },
+    {
+      "case_id": "semantic-conflict-disclosed",
+      "kind": "node",
+      "skill_id": "cws-company-profile",
+      "run_id": "run-dataset",
+      "base": "schema/base/company-profile.handoff.json",
+      "evidence": "business/shared/evidence-conflict-disclosed.json",
+      "case_root": "business/shared",
+      "source_hashes": {
+        "business/shared/raw/company.json": "sha256:35385ee34892afd042031ec381670b2dde50690bdee45516554be22c03ef6567"
+      },
+      "expected_decision": "passed",
+      "quality_state": "degraded",
+      "expected_reasons": [],
+      "tags": [
+        "business",
+        "node",
+        "source-conflict"
+      ]
+    },
+    {
+      "case_id": "semantic-stale-undisclosed",
+      "kind": "node",
+      "skill_id": "cws-company-profile",
+      "run_id": "run-dataset",
+      "base": "schema/base/company-profile.handoff.json",
+      "evidence": "business/shared/evidence-stale.json",
+      "case_root": "business/shared",
+      "evaluation_at": "2026-07-13",
+      "source_hashes": {
+        "business/shared/raw/company.json": "sha256:35385ee34892afd042031ec381670b2dde50690bdee45516554be22c03ef6567"
+      },
+      "expected_decision": "blocked",
+      "quality_state": "invalid",
+      "expected_reasons": [
+        "stale_data_not_disclosed"
+      ],
+      "tags": [
+        "business",
+        "node",
+        "freshness"
+      ]
+    },
+    {
+      "case_id": "semantic-stale-disclosed",
+      "kind": "node",
+      "skill_id": "cws-company-profile",
+      "run_id": "run-dataset",
+      "base": "schema/base/company-profile.handoff.json",
+      "patch": "schema/patches/stale-disclosed.json",
+      "evidence": "business/shared/evidence-stale.json",
+      "case_root": "business/shared",
+      "evaluation_at": "2026-07-13",
+      "source_hashes": {
+        "business/shared/raw/company.json": "sha256:35385ee34892afd042031ec381670b2dde50690bdee45516554be22c03ef6567"
+      },
+      "expected_decision": "passed",
+      "quality_state": "degraded",
+      "expected_reasons": [],
+      "tags": [
+        "business",
+        "node",
+        "freshness"
+      ]
+    },
+    {
+      "case_id": "semantic-negative-claim-uncovered",
+      "kind": "node",
+      "skill_id": "cws-company-profile",
+      "run_id": "run-dataset",
+      "base": "schema/base/company-profile.handoff.json",
+      "evidence": "business/shared/evidence-negative-uncovered.json",
+      "case_root": "business/shared",
+      "source_hashes": {
+        "business/shared/raw/company.json": "sha256:35385ee34892afd042031ec381670b2dde50690bdee45516554be22c03ef6567"
+      },
+      "expected_decision": "blocked",
+      "quality_state": "invalid",
+      "expected_reasons": [
+        "negative_claim_without_search_coverage"
+      ],
+      "tags": [
+        "business",
+        "node",
+        "negative-claim"
+      ]
+    },
+    {
+      "case_id": "judge-material-risk-omitted",
+      "kind": "node",
+      "skill_id": "cws-company-profile",
+      "run_id": "run-dataset",
+      "base": "schema/base/company-profile.handoff.json",
+      "evidence": "business/judge-risk-omitted/evidence.json",
+      "case_root": "business/judge-risk-omitted",
+      "raw_summaries": [
+        "business/judge-risk-omitted/raw-summary.json"
+      ],
+      "source_hashes": {
+        "business/judge-risk-omitted/raw/risk.json": "sha256:395b97a23ed772ebd9e955387a17859a527a5200df9f040442eea0d43ebc035f",
+        "business/judge-risk-omitted/raw-summary.json": "sha256:8cc2147a9b307d2e79486ad1a8280d947a7205b9172e90e914994732f1da9139"
+      },
+      "judge": {
+        "evaluator_id": "company-profile-semantic-v1",
+        "rubric_id": "company-profile-v1",
+        "min_confidence": 0.6
+      },
+      "expected_decision": "needs_review",
+      "quality_state": "invalid",
+      "expected_reasons": [
+        "material_risk_omitted"
+      ],
+      "tags": [
+        "business",
+        "node",
+        "judge"
+      ]
+    },
+    {
+      "case_id": "final-pass",
+      "kind": "final",
+      "skill_id": "cws-due-diligence",
+      "run_id": "final-pass",
+      "run_dir": "final/pass",
+      "expected_decision": "passed",
+      "quality_state": "complete",
+      "expected_reasons": [],
+      "tags": [
+        "schema",
+        "final",
+        "baseline"
+      ]
+    },
+    {
+      "case_id": "final-missing-parent",
+      "kind": "final",
+      "skill_id": "cws-due-diligence",
+      "run_id": "final-missing-parent",
+      "run_dir": "final/missing-parent",
+      "expected_decision": "blocked",
+      "quality_state": "invalid",
+      "expected_reasons": [
+        "parent_handoff_missing"
+      ],
+      "tags": [
+        "schema",
+        "final",
+        "missing-parent"
+      ]
+    },
+    {
+      "case_id": "final-missing-report",
+      "kind": "final",
+      "skill_id": "cws-due-diligence",
+      "run_id": "final-no-report",
+      "run_dir": "final/missing-report",
+      "expected_decision": "blocked",
+      "quality_state": "invalid",
+      "expected_reasons": [
+        "handoff_missing"
+      ],
+      "tags": [
+        "schema",
+        "final",
+        "missing-report"
+      ]
+    },
+    {
+      "case_id": "final-cross-run",
+      "kind": "final",
+      "skill_id": "cws-due-diligence",
+      "run_id": "final-cross",
+      "run_dir": "final/cross-run",
+      "expected_decision": "blocked",
+      "quality_state": "invalid",
+      "expected_reasons": [
+        "run_id_mismatch"
+      ],
+      "tags": [
+        "schema",
+        "final",
+        "isolation"
+      ]
+    },
+    {
+      "case_id": "final-cross-subject",
+      "kind": "final",
+      "skill_id": "cws-due-diligence",
+      "run_id": "final-subject",
+      "run_dir": "final/cross-subject",
+      "expected_decision": "blocked",
+      "quality_state": "invalid",
+      "expected_reasons": [
+        "cross_subject_artifact"
+      ],
+      "tags": [
+        "business",
+        "final",
+        "subject"
+      ]
+    },
+    {
+      "case_id": "final-parent-gate-blocked",
+      "kind": "final",
+      "skill_id": "cws-due-diligence",
+      "run_id": "final-blocked",
+      "run_dir": "final/parent-blocked",
+      "expected_decision": "blocked",
+      "quality_state": "invalid",
+      "expected_reasons": [
+        "parent_gate_blocked"
+      ],
+      "tags": [
+        "business",
+        "final",
+        "parent-gate"
+      ]
+    },
+    {
+      "case_id": "final-unsupported-new-fact",
+      "kind": "final",
+      "skill_id": "cws-due-diligence",
+      "run_id": "final-new-fact",
+      "run_dir": "final/new-fact",
+      "evidence": "final/new-fact/artifacts/final-new-fact/cws-due-diligence/evidence.json",
+      "case_root": "final/new-fact/artifacts/final-new-fact/cws-due-diligence",
+      "expected_decision": "blocked",
+      "quality_state": "invalid",
+      "expected_reasons": [
+        "evidence_missing"
+      ],
+      "tags": [
+        "business",
+        "final",
+        "fabrication"
+      ]
+    },
+    {
+      "case_id": "final-judge-material-risk-omitted",
+      "kind": "final",
+      "skill_id": "cws-due-diligence",
+      "run_id": "final-judge",
+      "run_dir": "final/judge-omitted",
+      "evidence": "final/judge-omitted/artifacts/final-judge/cws-due-diligence/evidence.json",
+      "case_root": "final/judge-omitted/artifacts/final-judge/cws-due-diligence",
+      "source_hashes": {
+        "final/judge-omitted/artifacts/final-judge/cws-due-diligence/raw/risk.json": "sha256:af9e21b7c7272395e1d060ea6c5479288569ab34153b6a44f1b072a9c35ef7d9"
+      },
+      "judge": {
+        "evaluator_id": "due-diligence-semantic-v1",
+        "rubric_id": "due-diligence-v1",
+        "min_confidence": 0.6
+      },
+      "expected_decision": "needs_review",
+      "quality_state": "invalid",
+      "expected_reasons": [
+        "material_risk_omitted"
+      ],
+      "tags": [
+        "business",
+        "final",
+        "judge",
+        "material-risk"
+      ]
+    },
+    {
+      "kind": "node",
+      "skill_id": "cws-company-profile",
+      "run_id": "run-real-byd",
+      "handoff": "business/real/byd/artifacts/run-real-byd/cws-company-profile/handoff.json",
+      "evidence": "business/real/byd/artifacts/run-real-byd/cws-company-profile/evidence.json",
+      "case_root": "business/real/byd/artifacts/run-real-byd/cws-company-profile",
+      "evaluation_at": "2026-07-13",
+      "source_hashes": {
+        "business/real/byd/artifacts/run-real-byd/cws-company-profile/raw/registration.json": "sha256:f88f3325651dcb94f6d4b700c2743acc7f53c310071de96b8681d6bbad88c4fa"
+      },
+      "expected_decision": "passed",
+      "quality_state": "degraded",
+      "expected_reasons": [],
+      "current_decision": "passed",
+      "current_reasons": [],
+      "tags": [
+        "business",
+        "real-snapshot",
+        "node"
+      ],
+      "case_id": "real-byd-profile"
+    },
+    {
+      "kind": "final",
+      "skill_id": "cws-due-diligence",
+      "run_id": "run-real-byd",
+      "run_dir": "business/real/byd",
+      "evidence": "business/real/byd/artifacts/run-real-byd/cws-due-diligence/evidence.json",
+      "case_root": "business/real/byd/artifacts/run-real-byd/cws-due-diligence",
+      "evaluation_at": "2026-07-13",
+      "source_hashes": {
+        "business/real/byd/artifacts/run-real-byd/cws-due-diligence/raw/litigation.json": "sha256:e584f294119fc2769c688a6d6e90e5066eefd588c6d28fdcfae5e3083ccb9300",
+        "business/real/byd/artifacts/run-real-byd/cws-due-diligence/raw/profile.json": "sha256:56ae9c2c7bb68d995af86ad680adc6d84fe3a8f32f6f826439d85def3ae28cc5"
+      },
+      "expected_decision": "passed",
+      "quality_state": "degraded",
+      "expected_reasons": [],
+      "current_decision": "passed",
+      "current_reasons": [],
+      "tags": [
+        "business",
+        "real-snapshot",
+        "final"
+      ],
+      "case_id": "real-byd-final"
+    },
+    {
+      "kind": "node",
+      "skill_id": "cws-company-profile",
+      "run_id": "run-real-catl",
+      "handoff": "business/real/catl/artifacts/run-real-catl/cws-company-profile/handoff.json",
+      "evidence": "business/real/catl/artifacts/run-real-catl/cws-company-profile/evidence.json",
+      "case_root": "business/real/catl/artifacts/run-real-catl/cws-company-profile",
+      "evaluation_at": "2026-07-13",
+      "source_hashes": {
+        "business/real/catl/artifacts/run-real-catl/cws-company-profile/raw/registration.json": "sha256:4291317a66e30aeeaafcf46e907f6dadb78efffab589481022dac1be159d2084"
+      },
+      "expected_decision": "passed",
+      "quality_state": "degraded",
+      "expected_reasons": [],
+      "current_decision": "passed",
+      "current_reasons": [],
+      "tags": [
+        "business",
+        "real-snapshot",
+        "node"
+      ],
+      "case_id": "real-catl-profile"
+    },
+    {
+      "kind": "final",
+      "skill_id": "cws-due-diligence",
+      "run_id": "run-real-catl",
+      "run_dir": "business/real/catl",
+      "evidence": "business/real/catl/artifacts/run-real-catl/cws-due-diligence/evidence.json",
+      "case_root": "business/real/catl/artifacts/run-real-catl/cws-due-diligence",
+      "evaluation_at": "2026-07-13",
+      "source_hashes": {
+        "business/real/catl/artifacts/run-real-catl/cws-due-diligence/raw/litigation.json": "sha256:8aa33e88f24982305619afd88705b5fe675e253736915fa2bdfb48edef28c4ec",
+        "business/real/catl/artifacts/run-real-catl/cws-due-diligence/raw/profile.json": "sha256:702d9ee4db565a69f9cc27e5d7918edb68aaa56533d1c442836572248d5e7e8f"
+      },
+      "expected_decision": "passed",
+      "quality_state": "degraded",
+      "expected_reasons": [],
+      "current_decision": "passed",
+      "current_reasons": [],
+      "tags": [
+        "business",
+        "real-snapshot",
+        "final"
+      ],
+      "case_id": "real-catl-final"
+    },
+    {
+      "kind": "node",
+      "skill_id": "cws-company-profile",
+      "run_id": "run-real-xiaomi-technology",
+      "handoff": "business/real/xiaomi-technology/artifacts/run-real-xiaomi-technology/cws-company-profile/handoff.json",
+      "evidence": "business/real/xiaomi-technology/artifacts/run-real-xiaomi-technology/cws-company-profile/evidence.json",
+      "case_root": "business/real/xiaomi-technology/artifacts/run-real-xiaomi-technology/cws-company-profile",
+      "evaluation_at": "2026-07-13",
+      "source_hashes": {
+        "business/real/xiaomi-technology/artifacts/run-real-xiaomi-technology/cws-company-profile/raw/registration.json": "sha256:e9fc2bb0d522fc5e56a3fa9400f9d811986d05f67096728a0437c76e4b0b4dcf"
+      },
+      "expected_decision": "passed",
+      "quality_state": "degraded",
+      "expected_reasons": [],
+      "current_decision": "passed",
+      "current_reasons": [],
+      "tags": [
+        "business",
+        "real-snapshot",
+        "node",
+        "entity-boundary"
+      ],
+      "case_id": "real-xiaomi-profile"
+    },
+    {
+      "kind": "final",
+      "skill_id": "cws-due-diligence",
+      "run_id": "run-real-xiaomi-technology",
+      "run_dir": "business/real/xiaomi-technology",
+      "evidence": "business/real/xiaomi-technology/artifacts/run-real-xiaomi-technology/cws-due-diligence/evidence.json",
+      "case_root": "business/real/xiaomi-technology/artifacts/run-real-xiaomi-technology/cws-due-diligence",
+      "evaluation_at": "2026-07-13",
+      "source_hashes": {
+        "business/real/xiaomi-technology/artifacts/run-real-xiaomi-technology/cws-due-diligence/raw/litigation.json": "sha256:41efb7699de5d52ba38aa8784118de7daa7639609654b6489f839edfbe415991",
+        "business/real/xiaomi-technology/artifacts/run-real-xiaomi-technology/cws-due-diligence/raw/profile.json": "sha256:0cf0c3b048553fd684f1ca912c16a097911ae6216e77a6f92b648901beac1060"
+      },
+      "expected_decision": "passed",
+      "quality_state": "degraded",
+      "expected_reasons": [],
+      "current_decision": "passed",
+      "current_reasons": [],
+      "tags": [
+        "business",
+        "real-snapshot",
+        "final",
+        "entity-boundary"
+      ],
+      "case_id": "real-xiaomi-final"
+    },
+    {
+      "kind": "node",
+      "skill_id": "cws-company-profile",
+      "run_id": "run-real-baidu-netcom",
+      "handoff": "business/real/baidu-netcom/artifacts/run-real-baidu-netcom/cws-company-profile/handoff.json",
+      "evidence": "business/real/baidu-netcom/artifacts/run-real-baidu-netcom/cws-company-profile/evidence.json",
+      "case_root": "business/real/baidu-netcom/artifacts/run-real-baidu-netcom/cws-company-profile",
+      "evaluation_at": "2026-07-13",
+      "source_hashes": {
+        "business/real/baidu-netcom/artifacts/run-real-baidu-netcom/cws-company-profile/raw/registration.json": "sha256:9bdbc76d79e38fac20c395a24108cad7c06c74ba3e2c06c71ebeab622d5f33fd"
+      },
+      "expected_decision": "passed",
+      "quality_state": "degraded",
+      "expected_reasons": [],
+      "current_decision": "passed",
+      "current_reasons": [],
+      "tags": [
+        "business",
+        "real-snapshot",
+        "node",
+        "entity-boundary"
+      ],
+      "case_id": "real-baidu-profile"
+    },
+    {
+      "kind": "final",
+      "skill_id": "cws-due-diligence",
+      "run_id": "run-real-baidu-netcom",
+      "run_dir": "business/real/baidu-netcom",
+      "evidence": "business/real/baidu-netcom/artifacts/run-real-baidu-netcom/cws-due-diligence/evidence.json",
+      "case_root": "business/real/baidu-netcom/artifacts/run-real-baidu-netcom/cws-due-diligence",
+      "evaluation_at": "2026-07-13",
+      "source_hashes": {
+        "business/real/baidu-netcom/artifacts/run-real-baidu-netcom/cws-due-diligence/raw/litigation.json": "sha256:b3239681e1e03ae8c6f3f72c09e2a06d1f0c520fb9eb1c37c85b69901e7c64fd",
+        "business/real/baidu-netcom/artifacts/run-real-baidu-netcom/cws-due-diligence/raw/profile.json": "sha256:df850e84e54c5040760caa8eca24949e26fdd172677da7ee8ea17a0bf571738f"
+      },
+      "expected_decision": "passed",
+      "quality_state": "degraded",
+      "expected_reasons": [],
+      "current_decision": "passed",
+      "current_reasons": [],
+      "tags": [
+        "business",
+        "real-snapshot",
+        "final",
+        "entity-boundary"
+      ],
+      "case_id": "real-baidu-final"
+    }
+  ]
+}

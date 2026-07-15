@@ -1,0 +1,182 @@
+{
+  "companies": [
+    {
+      "case_id": "xiaomi-technology",
+      "subject": {
+        "name": "小米科技有限责任公司",
+        "unified_social_credit_code": "91110108551385082Q"
+      },
+      "sources": [
+        {
+          "source_id": "registration",
+          "file": "raw/小米科技有限责任公司/2026-07-10-registration.json",
+          "observed_at": "2026-07-10",
+          "facts": {
+            "name": "/企业名称",
+            "unified_social_credit_code": "/统一社会信用代码",
+            "status": "/登记状态",
+            "legal_representative": "/法定代表人",
+            "registered_capital": "/注册资本",
+            "established_at": "/成立日期",
+            "industry": "/国标行业"
+          }
+        },
+        {
+          "source_id": "risk-scan",
+          "file": "raw/小米科技有限责任公司/2026-07-10-risk-scan.json",
+          "observed_at": "2026-07-10",
+          "facts": {"risk_scan": "/"}
+        },
+        {
+          "source_id": "shareholders",
+          "file": "raw/小米科技有限责任公司/2026-07-10-shareholder.json",
+          "observed_at": "2026-07-10",
+          "facts": {"shareholders": "/shareholders", "summary": "/summary"}
+        },
+        {
+          "source_id": "financing",
+          "file": "raw/小米科技有限责任公司/2026-07-10-financing.json",
+          "observed_at": "2026-07-10",
+          "facts": {"entity": "/entity", "data_sources": "/data_sources"}
+        }
+      ],
+      "wiki": [
+        "wiki/小米科技有限责任公司/企业画像.md",
+        "wiki/小米科技有限责任公司/股权结构.md",
+        "wiki/小米科技有限责任公司/司法风险分析.md",
+        "wiki/小米科技有限责任公司/融资历史分析.md"
+      ]
+    },
+    {
+      "case_id": "byd",
+      "subject": {
+        "name": "比亚迪股份有限公司",
+        "unified_social_credit_code": "91440300192317458F"
+      },
+      "sources": [
+        {
+          "source_id": "registration",
+          "file": "raw/比亚迪股份有限公司/get_company_registration_info.json",
+          "observed_at": "2026-07-07",
+          "facts": {
+            "name": "/企业名称",
+            "unified_social_credit_code": "/统一社会信用代码",
+            "status": "/登记状态",
+            "legal_representative": "/法定代表人",
+            "registered_capital": "/注册资本",
+            "established_at": "/成立日期",
+            "industry": "/国标行业"
+          }
+        },
+        {
+          "source_id": "risk-scan",
+          "file": "raw/比亚迪股份有限公司/get_company_risk_scan.json",
+          "observed_at": "2026-07-07",
+          "facts": {"name": "/企业名称", "summary": "/摘要", "recorded_risks": "/有记录10项"}
+        },
+        {
+          "source_id": "shareholders",
+          "file": "raw/比亚迪股份有限公司/get_shareholder_info.json",
+          "observed_at": "2026-07-07",
+          "facts": {"name": "/企业名称", "shareholders": "/股东信息", "summary": "/摘要"}
+        },
+        {
+          "source_id": "financing",
+          "file": "raw/比亚迪股份有限公司/get_financing_records.json",
+          "observed_at": "2026-07-07",
+          "facts": {"records": "/records", "summary": "/summary"}
+        }
+      ],
+      "wiki": [
+        "wiki/比亚迪股份有限公司/企业画像.md",
+        "wiki/比亚迪股份有限公司/股权结构.md",
+        "wiki/比亚迪股份有限公司/司法风险分析.md",
+        "wiki/比亚迪股份有限公司/融资历史分析.md"
+      ]
+    },
+    {
+      "case_id": "catl",
+      "subject": {
+        "name": "宁德时代新能源科技股份有限公司",
+        "unified_social_credit_code": "91350900587527783P"
+      },
+      "sources": [
+        {
+          "source_id": "registration",
+          "file": "raw/宁德时代新能源科技股份有限公司/get_company_registration_info.json",
+          "observed_at": "2026-07-07",
+          "facts": {
+            "name": "/企业名称",
+            "unified_social_credit_code": "/统一社会信用代码",
+            "status": "/登记状态",
+            "legal_representative": "/法定代表人",
+            "registered_capital": "/注册资本",
+            "established_at": "/成立日期",
+            "industry": "/国标行业"
+          }
+        },
+        {
+          "source_id": "risk-scan",
+          "file": "raw/宁德时代新能源科技股份有限公司/get_company_risk_scan.json",
+          "observed_at": "2026-07-07",
+          "facts": {"name": "/企业名称", "summary": "/摘要", "risk_factors": "/风险因子扫描"}
+        },
+        {
+          "source_id": "shareholders",
+          "file": "raw/宁德时代新能源科技股份有限公司/get_shareholder_info.json",
+          "observed_at": "2026-07-07",
+          "facts": {"name": "/企业名称", "shareholders": "/股东信息", "summary": "/摘要"}
+        },
+        {
+          "source_id": "financing",
+          "file": "raw/宁德时代新能源科技股份有限公司/financing_web_search.json",
+          "observed_at": "2026-07-07",
+          "facts": {
+            "name": "/company",
+            "unified_social_credit_code": "/credit_code",
+            "financing_rounds": "/financing_rounds",
+            "capital_market_summary": "/capital_market_summary"
+          }
+        }
+      ],
+      "wiki": [
+        "wiki/宁德时代新能源科技股份有限公司/企业画像.md",
+        "wiki/宁德时代新能源科技股份有限公司/股权结构.md",
+        "wiki/宁德时代新能源科技股份有限公司/司法风险分析.md",
+        "wiki/宁德时代新能源科技股份有限公司/融资历史.md"
+      ]
+    },
+    {
+      "case_id": "baidu-netcom",
+      "subject": {
+        "name": "北京百度网讯科技有限公司",
+        "unified_social_credit_code": "91110000802100433B"
+      },
+      "sources": [
+        {
+          "source_id": "profile",
+          "file": "raw/北京百度网讯科技有限公司/profile.json",
+          "observed_at": "2026-07-07",
+          "facts": {
+            "name": "/company/name",
+            "unified_social_credit_code": "/company/uscc",
+            "status": "/company/status",
+            "legal_representative": "/company/legal_rep",
+            "registered_capital": "/company/registered_capital",
+            "established_at": "/company/established",
+            "industry": "/company/gb_industry",
+            "shareholders": "/shareholders",
+            "risk_scan": "/risk_scan",
+            "listing": "/listing"
+          }
+        }
+      ],
+      "wiki": [
+        "wiki/北京百度网讯科技有限公司/企业画像.md",
+        "wiki/北京百度网讯科技有限公司/股权结构.md",
+        "wiki/北京百度网讯科技有限公司/企业尽调.md",
+        "wiki/北京百度网讯科技有限公司/融资历史.md"
+      ]
+    }
+  ]
+}

@@ -24,3 +24,48 @@ rules:
   - 不要编造工商数据
   - 数据缺失时输出 evidence_gaps
   - 不做行业分析、风险研判或投资建议
+
+gate:
+  handoff: required
+  required_outputs:
+    - company_name_confirmed
+    - unified_social_credit_code
+    - legal_representative
+    - registered_capital
+    - establishment_date
+    - operating_status
+    - registered_address
+    - business_scope
+    - evidence_gaps
+  required_meta:
+    - subject
+    - sources
+    - data_as_of
+    - evidence_gaps
+    - wiki_writeback
+    - run_id
+  artifact_checks:
+    evidence_gaps:
+      type: list
+    company_name_confirmed:
+      type: object_or_string
+      non_empty: true
+    operating_status:
+      type: object_or_string
+      non_empty: true
+  behavior_checks:
+    - id: no_fabricated_empty_fill
+      when: missing_data
+      require: evidence_gaps_non_null
+    - id: data_role_no_final_report
+      when: role == data
+      forbid_keys: [final_report, due_diligence_report]
+  semantic:
+    evidence: required
+    deterministic_checks:
+      - claim_evidence
+      - subject_identity
+      - freshness_disclosure
+      - source_conflict_disclosure
+    required_claims:
+      - artifacts.operating_status

@@ -5,17 +5,144 @@ from __future__ import annotations
 import json
 import os
 import re
+import sys
 import time
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 ROOT = Path(__file__).resolve().parents[1]
 _CONTEXT = re.compile(r"cws_gate: skill=([a-z0-9-]+) run_id=([a-z0-9-]+)")
+_LOOP_CONTEXT = re.compile(
+    r"cws_loop: run_id=([a-z0-9-]+) node=([a-z0-9-]+)"
+)
 
 
 def task_context(body: str | None) -> tuple[str, str] | None:
     match = _CONTEXT.search(body or "")
     return (match.group(1), match.group(2)) if match else None
+
+
+def loop_context(body: str | None) -> tuple[str, str] | None:
+    match = _LOOP_CONTEXT.search(body or "")
+    return (match.group(1), match.group(2)) if match else None
+
+
+def _loop_runtime():
+    scripts = ROOT / "skills" / "cws-workflow" / "scripts"
+    if str(scripts) not in sys.path:
+        sys.path.insert(0, str(scripts))
+    from atomic_loop import complete_attempt, next_attempt
+    from delegate_runner import DelegateRunnerError, load_state
+
+    return complete_attempt, next_attempt, DelegateRunnerError, load_state
+
+
+def claim_loop(
+    task_id: str,
+    body: str | None,
+    *,
+    company_kb: Path | None = None,
+) -> dict[str, Any] | None:
+    context = loop_context(body)
+    if context is None:
+        return None
+    run_id, node_id = context
+    _complete_attempt, next_attempt, error_type, load_state = _loop_runtime()
+    company_kb = company_kb or Path(
+        os.environ.get("CWS_COMPANY_KB_DIR", "~/.cws/company-knowledge")
+    ).expanduser()
+    _path, state = load_state(company_kb, run_id)
+    node = state["nodes"].get(node_id)
+    if node is None or node.get("kanban_task_id") != task_id:
+        raise error_type(f"Kanban task is not bound to loop node: {task_id}")
+    return next_attempt(company_kb, run_id, node_id)
+
+
+def _default_requeue(
+    task_id: str,
+    reason: str,
+    *,
+    board: str | None = None,
+) -> bool:
+    from hermes_cli import kanban_db
+
+    conn = kanban_db.connect(board=board)
+    try:
+        retry_task = getattr(kanban_db, "retry_task", None)
+        if retry_task is None:
+            kanban_db.block_task(
+                conn,
+                task_id,
+                reason=(
+                    "CWS loop requires a worker-safe Hermes retry_task API: "
+                    + reason
+                ),
+            )
+            return False
+        return bool(retry_task(conn, task_id, reason=reason))
+    finally:
+        conn.close()
+
+
+def _block_loop_task(
+    task_id: str,
+    reason: str,
+    *,
+    board: str | None = None,
+) -> None:
+    from hermes_cli import kanban_db
+
+    conn = kanban_db.connect(board=board)
+    try:
+        kanban_db.block_task(conn, task_id, reason=reason)
+    finally:
+        conn.close()
+
+
+def complete_loop(
+    task_id: str,
+    body: str | None,
+    *,
+    board: str | None = None,
+    company_kb: Path | None = None,
+    requeue: Callable[[str, str], bool] | None = None,
+) -> dict[str, Any] | None:
+    context = loop_context(body)
+    if context is None:
+        return None
+    run_id, node_id = context
+    complete_attempt, _next_attempt, error_type, load_state = _loop_runtime()
+    company_kb = company_kb or Path(
+        os.environ.get("CWS_COMPANY_KB_DIR", "~/.cws/company-knowledge")
+    ).expanduser()
+    _path, state = load_state(company_kb, run_id)
+    node = state["nodes"].get(node_id)
+    if node is None or node.get("kanban_task_id") != task_id:
+        raise error_type(f"Kanban task is not bound to loop node: {task_id}")
+    lease_id = node.get("lease_id")
+    if not lease_id:
+        raise error_type(f"loop node has no active lease: {node_id}")
+    result = complete_attempt(company_kb, run_id, lease_id, node_id)
+    if result.get("status") == "passed":
+        return result
+    if result.get("next_action") != "revise":
+        _block_loop_task(
+            task_id,
+            f"CWS loop paused: {result.get('next_action', result.get('status'))}",
+            board=board,
+        )
+        result["kanban_action"] = "blocked"
+        return result
+    reason = "; ".join(result.get("errors") or ["CWS loop requested revision"])
+    did_requeue = (
+        requeue(task_id, reason)
+        if requeue is not None
+        else _default_requeue(task_id, reason, board=board)
+    )
+    result["kanban_action"] = "requeued" if did_requeue else "blocked"
+    if not did_requeue:
+        result["requeue_error"] = "Hermes retry_task capability is unavailable"
+    return result
 
 
 def _result_dir(run_id: str, skill: str) -> Path:
@@ -49,21 +176,31 @@ def check(skill: str, run_id: str) -> dict[str, Any] | None:
         return None
 
     handoff = _result_dir(run_id, skill) / "handoff.json"
-    code, errors = check_node(ROOT, skill, handoff, run_id)
+    outcome = check_node(ROOT, skill, handoff, run_id)
     gate_name = "node"
-    if code == 0 and gate.get("final"):
-        code, errors = check_final(ROOT, skill, _result_dir(run_id, skill).parents[2], run_id)
+    if outcome.exit_code == 0 and gate.get("final"):
+        outcome = check_final(ROOT, skill, _result_dir(run_id, skill).parents[2], run_id)
         gate_name = "final"
+    if outcome.decision == "passed":
+        status = "passed"
+    elif outcome.decision == "needs_review":
+        # Kanban maps needs_review to blocked pause; gate-result keeps decision.
+        status = "blocked"
+    else:
+        status = "blocked"
     result = {
         "run_id": run_id,
         "skill_id": skill,
         "gate": gate_name,
-        "status": "passed" if code == 0 else "blocked",
+        "status": status,
+        "decision": outcome.decision,
         "checked_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "handoff_path": str(handoff),
-        "exit_code": code,
-        "errors": [] if code == 0 else errors,
+        "exit_code": outcome.exit_code,
+        "errors": [] if outcome.exit_code == 0 else list(outcome.messages),
     }
+    if outcome.judge is not None:
+        result["judge"] = outcome.judge
     result["result_path"] = str(_write_result(run_id, skill, result))
     return result
 

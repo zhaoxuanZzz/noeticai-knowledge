@@ -1,0 +1,189 @@
+{
+  "facts": {
+    "name": "宁德时代新能源科技股份有限公司",
+    "risk_factors": [
+      {
+        "明细工具": "get_dishonest_info",
+        "条目数": 0,
+        "风险因子": "失信信息"
+      },
+      {
+        "明细工具": "get_judgment_debtor_info",
+        "条目数": 0,
+        "风险因子": "被执行人"
+      },
+      {
+        "明细工具": "get_high_consumption_restriction",
+        "条目数": 0,
+        "风险因子": "限制高消费"
+      },
+      {
+        "明细工具": "get_terminated_cases",
+        "条目数": 0,
+        "风险因子": "终本案件"
+      },
+      {
+        "明细工具": "get_judicial_documents",
+        "条目数": 106,
+        "风险因子": "裁判文书"
+      },
+      {
+        "明细工具": "get_case_filing_info",
+        "条目数": 131,
+        "风险因子": "立案信息"
+      },
+      {
+        "明细工具": "get_hearing_notice",
+        "条目数": 207,
+        "风险因子": "开庭公告"
+      },
+      {
+        "明细工具": "get_court_notice",
+        "条目数": 28,
+        "风险因子": "法院公告"
+      },
+      {
+        "明细工具": "get_service_notice",
+        "条目数": 7,
+        "风险因子": "送达公告"
+      },
+      {
+        "明细工具": "get_bankruptcy_reorganization",
+        "条目数": 0,
+        "风险因子": "破产重整"
+      },
+      {
+        "明细工具": "get_equity_freeze",
+        "条目数": 0,
+        "风险因子": "股权冻结"
+      },
+      {
+        "明细工具": "get_judicial_auction",
+        "条目数": 0,
+        "风险因子": "司法拍卖"
+      },
+      {
+        "明细工具": "get_valuation_inquiry",
+        "条目数": 0,
+        "风险因子": "询价评估"
+      },
+      {
+        "明细工具": "get_pre_litigation_mediation",
+        "条目数": 0,
+        "风险因子": "诉前调解"
+      },
+      {
+        "明细工具": "get_exit_restriction",
+        "条目数": 0,
+        "风险因子": "限制出境"
+      },
+      {
+        "明细工具": "get_administrative_penalty",
+        "条目数": 0,
+        "风险因子": "行政处罚"
+      },
+      {
+        "明细工具": "get_business_exception",
+        "条目数": 0,
+        "风险因子": "经营异常"
+      },
+      {
+        "明细工具": "get_serious_violation",
+        "条目数": 0,
+        "风险因子": "严重违法"
+      },
+      {
+        "明细工具": "get_environmental_penalty",
+        "条目数": 0,
+        "风险因子": "环保处罚"
+      },
+      {
+        "明细工具": "get_tax_abnormal",
+        "条目数": 0,
+        "风险因子": "税务非正常户"
+      },
+      {
+        "明细工具": "get_tax_arrears_notice",
+        "条目数": 0,
+        "风险因子": "欠税公告"
+      },
+      {
+        "明细工具": "get_tax_violation",
+        "条目数": 0,
+        "风险因子": "税收违法"
+      },
+      {
+        "明细工具": "get_disciplinary_list",
+        "条目数": 0,
+        "风险因子": "惩戒名单"
+      },
+      {
+        "明细工具": "get_default_info",
+        "条目数": 0,
+        "风险因子": "违约事项"
+      },
+      {
+        "明细工具": "get_guarantee_info",
+        "条目数": 984,
+        "风险因子": "担保信息"
+      },
+      {
+        "明细工具": "get_equity_pledge_info",
+        "条目数": 4,
+        "风险因子": "股权出质"
+      },
+      {
+        "明细工具": "get_stock_pledge_info",
+        "条目数": 26,
+        "风险因子": "股权质押"
+      },
+      {
+        "明细工具": "get_chattel_mortgage_info",
+        "条目数": 10,
+        "风险因子": "动产抵押"
+      },
+      {
+        "明细工具": "get_land_mortgage_info",
+        "条目数": 0,
+        "风险因子": "土地抵押"
+      },
+      {
+        "明细工具": "get_simple_cancellation_info",
+        "条目数": 0,
+        "风险因子": "简易注销"
+      },
+      {
+        "明细工具": "get_cancellation_record_info",
+        "条目数": 0,
+        "风险因子": "注销备案"
+      },
+      {
+        "明细工具": "get_liquidation_info",
+        "条目数": 0,
+        "风险因子": "清算信息"
+      },
+      {
+        "明细工具": "get_service_announcement",
+        "条目数": 0,
+        "风险因子": "劳动仲裁"
+      },
+      {
+        "明细工具": "get_public_exhortation",
+        "条目数": 0,
+        "风险因子": "公示催告"
+      },
+      {
+        "明细工具": "get_property_asset_announcement",
+        "条目数": 0,
+        "风险因子": "财产悬赏公告"
+      }
+    ],
+    "summary": "已全量扫描 35 项风险因子：9 项有记录、26 项无记录。有记录：裁判文书(106)、立案信息(131)、开庭公告(207)、法院公告(28)、送达公告(7)、担保信息(984)、股权出质(4)、股权质押(26)、动产抵押(10)。各因子明细请调用其「明细工具」。"
+  },
+  "observed_at": "2026-07-07",
+  "source_id": "risk-scan",
+  "subject": {
+    "name": "宁德时代新能源科技股份有限公司",
+    "unified_social_credit_code": "91350900587527783P"
+  }
+}

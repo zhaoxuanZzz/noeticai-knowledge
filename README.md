@@ -34,10 +34,16 @@
 
 ## 开发
 
-本仓库为独立开发目录。本地部署到 Hermes（校验、软链到 `~/.hermes/plugins/`、启用插件、合并 MCP，并做安装/MCP 冒烟验证）：
+本仓库为独立开发目录。本地安装到 Hermes（交互配置 `QCC_MCP_TOKEN` / Judge 环境变量到 `~/.hermes/.env` 与 `~/.cws/env.sh`，校验、软链到 `~/.hermes/plugins/`、启用插件、合并 MCP，并做安装/MCP 冒烟验证）：
 
 ```bash
-make deploy-local
+make install
+```
+
+仅配置环境变量（已存在则询问是否覆盖，默认不覆盖）：
+
+```bash
+make configure-env
 ```
 
 仅验证当前 Hermes 安装是否生效（插件已启用、MCP 配置齐全、连通性）：
@@ -52,6 +58,12 @@ make verify-hermes
 
 ```bash
 python3 scripts/validate_work_suite.py .
+```
+
+Gate 决策为 `needs_review` 时会在 handoff 同目录生成人工审核包；也可重生成：
+
+```bash
+python3 scripts/render_gate_review.py --handoff-dir <company-kb>/artifacts/<run-id>/<skill-id>
 ```
 
 ## 目录结构

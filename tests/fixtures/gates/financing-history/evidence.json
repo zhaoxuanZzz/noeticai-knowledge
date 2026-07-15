@@ -1,0 +1,17 @@
+{
+  "run_id": "run-test",
+  "skill_id": "cws-financing-history",
+  "subject": {"name": "杭州示例科技有限公司"},
+  "evidence": [{
+    "id": "e-status",
+    "field": "financing_status",
+    "value": "未检索到公开融资轮次",
+    "source_ref": "raw/source.json#/status"
+  }],
+  "claims": [{
+    "artifact_path": "artifacts.financing_timeline.status",
+    "value": "未检索到公开融资轮次",
+    "evidence_refs": ["e-status"]
+  }],
+  "conflicts": []
+}

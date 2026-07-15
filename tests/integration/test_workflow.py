@@ -60,6 +60,7 @@ class WorkflowIntegrationTest(unittest.TestCase):
 
         self.assertIn("cws-due-diligence", ctx.skills)
         self.assertIn("cws-due-diligence", ctx.commands)
+        self.assertIn("kanban_task_claimed", ctx.hooks)
         self.assertIn("企业尽调", ctx.command_descriptions["cws-due-diligence"])
         self.assertIn("基于企业画像", ctx.command_descriptions["cws-due-diligence"])
         self.assertIn("输入公司名称", ctx.command_args_hints["cws-due-diligence"])
@@ -268,7 +269,7 @@ extra_top_level: keep-me
         self.assertNotIn("assignee", graph["nodes"][0])
         self.assertNotIn("hermes kanban create", result.stdout)
 
-    def test_delegate_plan_carries_one_run_id_and_gate_commands(self) -> None:
+    def test_delegate_plan_keeps_gate_metadata_out_of_maker_prompts(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             company_kb = Path(temp) / "company-kb"
             env = os.environ.copy()
@@ -288,10 +289,89 @@ extra_top_level: keep-me
             )
         graph = json.loads(result.stdout)
         self.assertEqual("run-gate-test", graph["run_id"])
-        self.assertIn("--run-id run-gate-test", graph["nodes"][0]["prompt"])
-        self.assertIn("artifacts/run-gate-test/cws-company-profile/handoff.json", graph["nodes"][0]["prompt"])
-        self.assertIn("--mode final", graph["nodes"][4]["prompt"])
-        self.assertIn("--run-id run-gate-test", graph["nodes"][4]["prompt"])
+        self.assertEqual("node", graph["nodes"][0]["node_gate"]["mode"])
+        self.assertEqual("cws-due-diligence", graph["nodes"][4]["final_gate"]["skill"])
+        for node in graph["nodes"]:
+            prompt = node["prompt"]
+            self.assertIn("run-gate-test", prompt)
+            self.assertIn(node["handoff_path"], prompt)
+            self.assertIn("evidence.json", prompt)
+            self.assertIn('"evidence": [{', prompt)
+            self.assertIn('"claims": [{', prompt)
+            self.assertIn('"artifact_path": "artifacts.', prompt)
+            self.assertIn('"source_ref": "raw/', prompt)
+            self.assertIn("source_ref 相对于 handoff 所在目录", prompt)
+            self.assertIn("handoff 中每个事实字段都必须有 claim", prompt)
+            self.assertNotIn("check_artifact_gate.py", prompt)
+            self.assertNotIn("--mode node", prompt)
+            self.assertNotIn("--mode final", prompt)
+            self.assertNotIn("node gate", prompt)
+            self.assertNotIn("门禁未通过不得完成", prompt)
+
+    def test_delegate_frozen_kb_disables_external_refresh_in_every_node(self) -> None:
+        result = run_command(
+            str(SCRIPT),
+            "execute",
+            "--mode",
+            "delegate",
+            "--skill",
+            "cws-due-diligence",
+            "--company",
+            "杭州XX科技有限公司",
+            "--run-id",
+            "run-frozen-test",
+            "--frozen-kb",
+        )
+        graph = json.loads(result.stdout)
+
+        self.assertTrue(graph["frozen_kb"])
+        self.assertTrue(all(node["frozen_kb"] for node in graph["nodes"]))
+        for node in graph["nodes"]:
+            self.assertIn("冻结知识库模式", node["prompt"])
+            self.assertIn("不得调用 MCP、网络搜索或其他外部数据源", node["prompt"])
+            self.assertIn("artifact 目录的 raw/", node["prompt"])
+
+    def test_delegate_default_keeps_wiki_first_refresh_behavior(self) -> None:
+        result = run_command(
+            str(SCRIPT), "execute", "--mode", "delegate",
+            "--skill", "cws-due-diligence", "--company", "杭州XX科技有限公司",
+        )
+        graph = json.loads(result.stdout)
+
+        self.assertFalse(graph["frozen_kb"])
+        self.assertFalse(any(node["frozen_kb"] for node in graph["nodes"]))
+        self.assertIn("缺失或过期时补齐公开信息", graph["nodes"][0]["prompt"])
+
+    def test_business_and_data_skills_do_not_execute_gates(self) -> None:
+        business_skills = (
+            "cws-company-basic-info",
+            "cws-company-profile",
+            "cws-shareholder-structure",
+            "cws-litigation-risk",
+            "cws-financing-history",
+            "cws-due-diligence",
+            "cws-investment-analysis",
+        )
+        forbidden = (
+            "check_artifact_gate.py",
+            "--mode final",
+            "node gate",
+            "门禁未通过不得",
+            "门禁 exit code",
+            "运行时门禁",
+            "Judge 返回可疑",
+            "Judge 要求复核",
+        )
+        for skill in (*business_skills, "cws-data-agent"):
+            text = (ROOT / "skills" / skill / "SKILL.md").read_text(encoding="utf-8")
+            for phrase in forbidden:
+                with self.subTest(skill=skill, phrase=phrase):
+                    self.assertNotIn(phrase, text)
+        for skill in business_skills:
+            text = (ROOT / "skills" / skill / "SKILL.md").read_text(encoding="utf-8")
+            with self.subTest(skill=skill):
+                self.assertNotIn("cws-data-agent", text)
+                self.assertNotIn("artifacts/<run-id>", text)
 
     def test_real_company_names_dry_run_for_all_entry_workflows(self) -> None:
         for company in real_companies():
@@ -549,6 +629,171 @@ extra_top_level: keep-me
             self.assertEqual(2, len(calls))
             self.assertEqual(["kanban", "dispatch"], calls[1])
 
+    def test_auto_loop_validated_plan_reuses_planned_submission(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            plan = Path(temp) / "auto-plan.json"
+            plan.write_text(
+                json.dumps(
+                    {
+                        "nodes": [
+                            {
+                                "id": "profile",
+                                "skill": "cws-company-profile",
+                                "parents": [],
+                                "outputs": ["company_profile"],
+                            },
+                            {
+                                "id": "equity",
+                                "skill": "cws-shareholder-structure",
+                                "parents": ["profile"],
+                                "inputs": ["company_profile"],
+                                "outputs": ["shareholder_structure"],
+                            },
+                            {
+                                "id": "litigation",
+                                "skill": "cws-litigation-risk",
+                                "parents": ["profile"],
+                                "inputs": ["company_profile"],
+                                "outputs": ["litigation_risk"],
+                            },
+                            {
+                                "id": "financing",
+                                "skill": "cws-financing-history",
+                                "parents": ["profile"],
+                                "inputs": ["company_profile"],
+                                "outputs": ["financing_history"],
+                            },
+                            {
+                                "id": "report",
+                                "skill": "cws-due-diligence",
+                                "parents": [
+                                    "profile",
+                                    "equity",
+                                    "litigation",
+                                    "financing",
+                                ],
+                                "inputs": [
+                                    "company_profile",
+                                    "shareholder_structure",
+                                    "litigation_risk",
+                                    "financing_history",
+                                ],
+                                "outputs": ["due_diligence_report"],
+                            },
+                        ]
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            result = run_command(
+                str(SCRIPT),
+                "execute",
+                "--mode",
+                "auto",
+                "--skill",
+                "cws-due-diligence",
+                "--company",
+                "杭州XX科技有限公司",
+                "--run-id",
+                "run-auto-loop",
+                "--loop",
+                "--plan",
+                str(plan),
+                "--dry-run",
+            )
+
+        self.assertIn("validated auto plan", result.stdout)
+        self.assertIn("loop: enabled", result.stdout)
+        self.assertEqual(5, result.stdout.count("hermes kanban create"))
+        self.assertNotIn("--triage", result.stdout)
+
+    def test_auto_loop_rejects_plan_missing_final_parent_artifacts(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            plan = Path(temp) / "incomplete-plan.json"
+            plan.write_text(
+                json.dumps(
+                    {
+                        "nodes": [
+                            {
+                                "id": "profile",
+                                "skill": "cws-company-profile",
+                                "parents": [],
+                                "outputs": ["company_profile"],
+                            },
+                            {
+                                "id": "report",
+                                "skill": "cws-due-diligence",
+                                "parents": ["profile"],
+                                "inputs": ["company_profile"],
+                                "outputs": ["due_diligence_report"],
+                            },
+                        ]
+                    }
+                ),
+                encoding="utf-8",
+            )
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(SCRIPT),
+                    "execute",
+                    "--mode",
+                    "auto",
+                    "--skill",
+                    "cws-due-diligence",
+                    "--company",
+                    "杭州XX科技有限公司",
+                    "--loop",
+                    "--plan",
+                    str(plan),
+                    "--dry-run",
+                ],
+                cwd=ROOT,
+                text=True,
+                capture_output=True,
+            )
+
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("missing final parent artifacts", result.stderr)
+
+    def test_auto_loop_triage_requests_plan_before_execution(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            temp_path = Path(temp)
+            company_kb = temp_path / "company-kb"
+            log_path = temp_path / "hermes-calls.jsonl"
+            fake_hermes = temp_path / "hermes"
+            write_fake_hermes(fake_hermes, log_path)
+            env = os.environ.copy()
+            env["CWS_COMPANY_KB_DIR"] = str(company_kb)
+            env["PATH"] = f"{temp_path}{os.pathsep}{env.get('PATH', '')}"
+
+            run_command(
+                str(SCRIPT),
+                "execute",
+                "--mode",
+                "auto",
+                "--skill",
+                "cws-due-diligence",
+                "--company",
+                "杭州XX科技有限公司",
+                "--run-id",
+                "run-auto-triage",
+                "--loop",
+                "--apply",
+                env=env,
+            )
+
+            call = json.loads(log_path.read_text(encoding="utf-8"))["argv"]
+            body = call[call.index("--body") + 1]
+            plan_path = (
+                company_kb / "artifacts" / "run-auto-triage" / "auto-plan.json"
+            )
+            self.assertIn("cws_auto_plan: run_id=run-auto-triage", body)
+            self.assertIn(str(plan_path), body)
+            self.assertIn("--mode auto --loop --plan", body)
+
     def test_execute_requires_explicit_mode(self) -> None:
         result = subprocess.run(
             [
@@ -643,6 +888,56 @@ extra_top_level: keep-me
             )
 
             self.assertTrue((runs_root / "batch-20260703-hzxx").is_dir())
+
+    def test_planned_loop_apply_initializes_runner_and_binds_kanban_tasks(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            temp_path = Path(temp)
+            company_kb = temp_path / "company-kb"
+            log_path = temp_path / "hermes-calls.jsonl"
+            fake_hermes = temp_path / "hermes"
+            write_fake_hermes(fake_hermes, log_path)
+            env = os.environ.copy()
+            env["CWS_COMPANY_KB_DIR"] = str(company_kb)
+            env["PATH"] = f"{temp_path}{os.pathsep}{env.get('PATH', '')}"
+
+            result = run_command(
+                str(SCRIPT),
+                "execute",
+                "--mode",
+                "planned",
+                "--skill",
+                "cws-due-diligence",
+                "--company",
+                "杭州XX科技有限公司",
+                "--run-id",
+                "run-planned-loop",
+                "--loop",
+                "--apply",
+                env=env,
+            )
+
+            self.assertIn("loop: enabled", result.stdout)
+            calls = [
+                json.loads(line)["argv"]
+                for line in log_path.read_text(encoding="utf-8").splitlines()
+            ]
+            self.assertEqual(5, len(calls))
+            state = json.loads(
+                (
+                    company_kb
+                    / "artifacts"
+                    / "run-planned-loop"
+                    / "workflow-state.json"
+                ).read_text(encoding="utf-8")
+            )
+            self.assertEqual("delegate-loop", state["mode"])
+            for index, node in enumerate(state["nodes"].values(), 1):
+                self.assertEqual(f"h{index}", node["kanban_task_id"])
+                body = calls[index - 1][calls[index - 1].index("--body") + 1]
+                self.assertIn(
+                    f"cws_loop: run_id=run-planned-loop node={node['id']}", body
+                )
+                self.assertNotIn("check_artifact_gate.py", body)
 
 
 def parent_values(argv: list[str]) -> list[str]:

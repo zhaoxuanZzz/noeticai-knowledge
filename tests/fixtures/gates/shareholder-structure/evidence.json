@@ -1,0 +1,17 @@
+{
+  "run_id": "run-test",
+  "skill_id": "cws-shareholder-structure",
+  "subject": {"name": "杭州示例科技有限公司"},
+  "evidence": [{
+    "id": "e-control",
+    "field": "control_party",
+    "value": "示例控股有限公司",
+    "source_ref": "raw/source.json#/control_party"
+  }],
+  "claims": [{
+    "artifact_path": "artifacts.shareholder_summary.control_party",
+    "value": "示例控股有限公司",
+    "evidence_refs": ["e-control"]
+  }],
+  "conflicts": []
+}

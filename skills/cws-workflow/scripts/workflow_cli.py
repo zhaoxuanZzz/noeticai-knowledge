@@ -21,10 +21,13 @@ from workflow_contract import (
     WorkSuiteError,
     known_skills,
     parse_workflow,
+    validate_auto_plan,
     validate_skill_workflow,
     workflow_path,
 )
-from workflow_planning import artifact_root, build_task_plan, company_kb_root
+from workflow_planning import build_task_plan, company_kb_root, task_body
+from delegate_runner import DelegateRunnerError
+from workflow_runtime_cli import command_execute_delegate, configure_runtime_parsers
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -197,6 +200,14 @@ def command_compile(args: argparse.Namespace) -> int:
 
 
 def validate_execute_args(args: argparse.Namespace) -> None:
+    if args.loop and args.mode not in {"planned", "delegate", "auto"}:
+        raise WorkSuiteError("--loop is only supported for workflow execution")
+    if args.frozen_kb and args.mode != "delegate":
+        raise WorkSuiteError("--frozen-kb is only supported for delegate mode")
+    if args.plan and (args.mode != "auto" or not args.loop):
+        raise WorkSuiteError("--plan requires --mode auto --loop")
+    if args.mode == "auto" and args.loop and not args.skill:
+        raise WorkSuiteError("--skill is required for auto loop")
     if args.mode in {"planned", "delegate"}:
         if not args.skill:
             raise WorkSuiteError(f"--skill is required for {args.mode} mode")
@@ -212,12 +223,43 @@ def validate_execute_args(args: argparse.Namespace) -> None:
 def command_execute_planned(args: argparse.Namespace) -> int:
     workspace = resolve_workspace(args.company, args.tenant, args.workspace)
     run_id = resolve_run_id(args.company, args.run_id)
-    tasks = build_task_plan(args.skill, args.company, workspace, run_id)
+    tasks = build_task_plan(
+        args.skill,
+        args.company,
+        workspace,
+        run_id,
+        include_gate_instructions=not args.loop,
+    )
+    if args.loop:
+        for task in tasks:
+            context_path = (
+                company_kb_root()
+                / "artifacts"
+                / run_id
+                / "contexts"
+                / f"{task.task_id}.json"
+            )
+            task.body += (
+                "\nCWS Runner 上下文：\n"
+                f"- cws_loop: run_id={run_id} node={task.task_id}\n"
+                f"- 当前 attempt 上下文：{context_path}\n"
+                "- 只写入该上下文所指向 maker-context.json 的 output_dir。\n"
+            )
+    return execute_kanban_plan(args, tasks, run_id, workspace)
+
+
+def execute_kanban_plan(
+    args: argparse.Namespace,
+    tasks: list[TaskPlan],
+    run_id: str,
+    workspace: str,
+) -> int:
     resolved_ids: dict[str, str] = {}
 
     print(f"CWS workflow execution plan: {args.skill} ({len(tasks)} tasks)")
     print(f"workspace: {workspace}")
     print(f"run_id: {run_id}")
+    print(f"loop: {'enabled' if args.loop else 'disabled'}")
     for task in tasks:
         print(f"- {task.task_id}: {task.role} {task.skill} parents={task.parents or []} outputs={task.outputs or []}")
 
@@ -230,19 +272,152 @@ def command_execute_planned(args: argparse.Namespace) -> int:
 
     ensure_workspace_dir(workspace)
 
+    if args.loop:
+        from atomic_loop import enable_delegate_loop
+        from delegate_runner import initialize
+        from workflow_runtime_cli import structured_delegate_nodes
+
+        initialize(
+            company_kb_root(),
+            run_id,
+            args.skill,
+            args.company,
+            structured_delegate_nodes(args.skill, run_id, tasks, loop_enabled=True),
+        )
+        enable_delegate_loop(
+            company_kb_root(), run_id, max_attempts=args.max_attempts
+        )
+
     for task in tasks:
         command = hermes_command(task, workspace, resolved_ids, args.tenant)
         result = subprocess.run(command, text=True, capture_output=True, check=True)
         task_id = parse_hermes_task_id(result.stdout)
         resolved_ids[str(task.task_id)] = task_id
+        if args.loop:
+            from atomic_loop import bind_kanban_task
+
+            bind_kanban_task(company_kb_root(), run_id, str(task.task_id), task_id)
         print(f"created {task.task_id}: {task_id}")
+
+    if args.dispatch:
+        subprocess.run(
+            ["hermes", "kanban", "dispatch"],
+            text=True,
+            capture_output=True,
+            check=True,
+        )
+        print("dispatched: nudged Hermes kanban dispatcher")
 
     return 0
 
 
+def build_auto_task_plan(
+    path: Path,
+    entry_skill: str,
+    company: str,
+    run_id: str,
+) -> list[TaskPlan]:
+    tasks: list[TaskPlan] = []
+    for node in validate_auto_plan(path, entry_skill):
+        skill = str(node["skill"])
+        node_id = str(node["id"])
+        role = "gen" if skill == entry_skill else "data"
+        role_skill = "cws-gen-agent" if role == "gen" else "cws-data-agent"
+        outputs = [str(item) for item in node["outputs"]]
+        stage = {"id": node_id, "inputs": list(node["inputs"])}
+        tasks.append(
+            TaskPlan(
+                skill=skill,
+                stage_id=node_id,
+                title=f"[CWS] {company} / {node_id} / {skill}",
+                body=task_body(
+                    entry_skill,
+                    company,
+                    stage,
+                    skill,
+                    outputs,
+                    role,
+                    run_id,
+                    include_gate_instructions=False,
+                ),
+                role=role,
+                role_skill=role_skill,
+                required_skills=(
+                    [role_skill]
+                    if role == "gen"
+                    else [role_skill, "cws-karpathy-llm-wiki"]
+                ),
+                outputs=outputs,
+                parents=[str(item) for item in node["parents"]],
+                task_id=node_id,
+            )
+        )
+    return tasks
+
+
 def command_execute_auto(args: argparse.Namespace) -> int:
     workspace = resolve_workspace(args.company, args.tenant, args.workspace)
+    if args.plan:
+        run_id = resolve_run_id(args.company, args.run_id)
+        tasks = build_auto_task_plan(
+            Path(args.plan).resolve(), args.skill, args.company, run_id
+        )
+        for task in tasks:
+            context_path = (
+                company_kb_root()
+                / "artifacts"
+                / run_id
+                / "contexts"
+                / f"{task.task_id}.json"
+            )
+            task.body += (
+                "\nCWS Runner 上下文：\n"
+                f"- cws_loop: run_id={run_id} node={task.task_id}\n"
+                f"- 当前 attempt 上下文：{context_path}\n"
+                "- 只写入该上下文所指向 maker-context.json 的 output_dir。\n"
+            )
+        print(f"validated auto plan: {args.plan}")
+        return execute_kanban_plan(args, tasks, run_id, workspace)
     plan = build_triage_plan(args.company, args.skill)
+    if args.loop:
+        run_id = resolve_run_id(args.company, args.run_id)
+        plan_path = company_kb_root() / "artifacts" / run_id / "auto-plan.json"
+        submit_command = [
+                "python3",
+                str(Path(__file__).resolve()),
+                "execute",
+                "--mode",
+                "auto",
+                "--loop",
+                "--plan",
+                str(plan_path),
+                "--skill",
+                args.skill,
+                "--company",
+                args.company,
+                "--run-id",
+                run_id,
+                "--max-attempts",
+                str(args.max_attempts),
+                "--apply",
+            ]
+        if args.tenant:
+            submit_command.extend(["--tenant", args.tenant])
+        if args.workspace:
+            submit_command.extend(["--workspace", args.workspace])
+        if args.dispatch:
+            submit_command.append("--dispatch")
+        submit = shlex.join(submit_command)
+        plan.body += f"""
+
+Auto Loop 计划交付：
+- cws_auto_plan: run_id={run_id}
+- 只生成结构化候选计划，不直接创建执行子任务
+- 将候选计划写入：{plan_path}
+- JSON 顶层为 nodes；每个节点包含 id、skill、parents、inputs、outputs
+- 写入后运行以下命令，由 CWS 校验并提交 Kanban：
+  {submit}
+"""
 
     print(f"CWS workflow auto triage: {args.company}")
     print(f"- entry hint: {args.skill or 'none'}")
@@ -273,129 +448,10 @@ def command_execute_auto(args: argparse.Namespace) -> int:
     return 0
 
 
-def command_execute_delegate(args: argparse.Namespace) -> int:
-    workspace = resolve_workspace(args.company, args.tenant, args.workspace)
-    run_id = resolve_run_id(args.company, args.run_id)
-    tasks = build_task_plan(args.skill, args.company, workspace, run_id)
-    graph = {
-        "mode": "delegate",
-        "skill": args.skill,
-        "company": args.company,
-        "workspace": workspace,
-        "run_id": run_id,
-        "instructions": "Delegate ready nodes to subagents using node.required_skills. Data nodes must include both cws-data-agent and cws-karpathy-llm-wiki; report nodes use cws-gen-agent. A node is ready only after every parent handoff is available and its node gate passed. The report node must run the final gate after its node gate. If subagents are unavailable, run nodes in the current agent in dependency order.",
-        "nodes": structured_delegate_nodes(args.skill, run_id, tasks),
-        "edges": [{"from": parent, "to": task.task_id} for task in tasks for parent in task.parents],
-    }
-    print(json.dumps(graph, ensure_ascii=False, indent=2))
-    return 0
-
-
-def structured_delegate_nodes(entry_skill: str, run_id: str, tasks: list[TaskPlan]) -> list[dict[str, object]]:
-    run_root = artifact_root(run_id)
-    return [
-        {
-            "id": task.task_id,
-            "stage": task.stage_id,
-            "skill": task.skill,
-            "parents": task.parents,
-            "handoff_path": str(run_root / task.skill / "handoff.json"),
-            "node_gate": {"mode": "node", "run_id": run_id},
-            "final_gate": (
-                {"mode": "final", "skill": entry_skill, "run_id": run_id}
-                if task.skill == entry_skill
-                else None
-            ),
-            "role": task.role,
-            "role_skill": task.role_skill,
-            "required_skills": task.required_skills,
-            "title": task.title,
-            "outputs": task.outputs,
-            "prompt": task.body,
-        }
-        for task in tasks
-    ]
-
-
-def command_delegate_init(args: argparse.Namespace) -> int:
-    from delegate_runner import DelegateRunnerError, initialize
-
-    run_id = resolve_run_id(args.company, args.run_id)
-    workspace = resolve_workspace(args.company, None, None)
-    tasks = build_task_plan(args.skill, args.company, workspace, run_id)
-    try:
-        result = initialize(
-            company_kb_root(),
-            run_id,
-            args.skill,
-            args.company,
-            structured_delegate_nodes(args.skill, run_id, tasks),
-        )
-    except DelegateRunnerError as exc:
-        raise WorkSuiteError(str(exc)) from exc
-    print(json.dumps(result, ensure_ascii=False, indent=2))
-    return 0
-
-
-def command_delegate_start(args: argparse.Namespace) -> int:
-    from delegate_runner import DelegateRunnerError, start
-
-    try:
-        result = start(company_kb_root(), args.run_id, args.node)
-    except DelegateRunnerError as exc:
-        raise WorkSuiteError(str(exc)) from exc
-    print(json.dumps(result, ensure_ascii=False, indent=2))
-    return 0
-
-
-def command_delegate_complete(args: argparse.Namespace) -> int:
-    from delegate_runner import DelegateRunnerError, complete
-
-    try:
-        result = complete(company_kb_root(), args.run_id, args.node)
-    except DelegateRunnerError as exc:
-        raise WorkSuiteError(str(exc)) from exc
-    print(json.dumps(result, ensure_ascii=False, indent=2))
-    return 0 if result["status"] == "passed" else 1
-
-
-def command_delegate_status(args: argparse.Namespace) -> int:
-    from delegate_runner import DelegateRunnerError, load_state, state_view
-
-    try:
-        _path, state = load_state(company_kb_root(), args.run_id)
-    except DelegateRunnerError as exc:
-        raise WorkSuiteError(str(exc)) from exc
-    print(json.dumps(state_view(state), ensure_ascii=False, indent=2))
-    return 0
-
-
-def command_delegate_ready(args: argparse.Namespace) -> int:
-    from delegate_runner import DelegateRunnerError, load_state, ready_nodes
-
-    try:
-        _path, state = load_state(company_kb_root(), args.run_id)
-    except DelegateRunnerError as exc:
-        raise WorkSuiteError(str(exc)) from exc
-    print(json.dumps({"run_id": args.run_id, "ready": ready_nodes(state)}, ensure_ascii=False, indent=2))
-    return 0
-
-
-def command_delegate_fail(args: argparse.Namespace) -> int:
-    from delegate_runner import DelegateRunnerError, fail
-
-    try:
-        result = fail(company_kb_root(), args.run_id, args.node, args.reason)
-    except DelegateRunnerError as exc:
-        raise WorkSuiteError(str(exc)) from exc
-    print(json.dumps(result, ensure_ascii=False, indent=2))
-    return 0
-
-
 def command_execute(args: argparse.Namespace) -> int:
     validate_execute_args(args)
     if args.mode == "delegate":
-        return command_execute_delegate(args)
+        return command_execute_delegate(args, resolve_workspace, resolve_run_id)
     if args.mode == "auto":
         return command_execute_auto(args)
     return command_execute_planned(args)
@@ -435,6 +491,10 @@ def build_parser() -> argparse.ArgumentParser:
     execute.add_argument("--run-id", help="Artifact run namespace; generated for planned/delegate when omitted")
     execute.add_argument("--dry-run", action="store_true")
     execute.add_argument("--apply", action="store_true")
+    execute.add_argument("--frozen-kb", action="store_true")
+    execute.add_argument("--loop", action="store_true")
+    execute.add_argument("--max-attempts", type=int, default=3)
+    execute.add_argument("--plan", help="auto loop candidate plan JSON")
     execute.add_argument(
         "--dispatch",
         action="store_true",
@@ -442,32 +502,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     execute.set_defaults(func=command_execute)
 
-    delegate = subparsers.add_parser("delegate")
-    delegate_commands = delegate.add_subparsers(dest="delegate_command", required=True)
-    delegate_init = delegate_commands.add_parser("init")
-    delegate_init.add_argument("--skill", required=True)
-    delegate_init.add_argument("--company", required=True)
-    delegate_init.add_argument("--run-id")
-    delegate_init.set_defaults(func=command_delegate_init)
-    for name, handler in (
-        ("start", command_delegate_start),
-        ("complete", command_delegate_complete),
-    ):
-        command = delegate_commands.add_parser(name)
-        command.add_argument("--run-id", required=True)
-        command.add_argument("--node", required=True)
-        command.set_defaults(func=handler)
-    delegate_status = delegate_commands.add_parser("status")
-    delegate_status.add_argument("--run-id", required=True)
-    delegate_status.set_defaults(func=command_delegate_status)
-    delegate_ready = delegate_commands.add_parser("ready")
-    delegate_ready.add_argument("--run-id", required=True)
-    delegate_ready.set_defaults(func=command_delegate_ready)
-    delegate_fail = delegate_commands.add_parser("fail")
-    delegate_fail.add_argument("--run-id", required=True)
-    delegate_fail.add_argument("--node", required=True)
-    delegate_fail.add_argument("--reason", required=True)
-    delegate_fail.set_defaults(func=command_delegate_fail)
+    configure_runtime_parsers(subparsers, resolve_workspace, resolve_run_id)
 
     return parser
 
@@ -477,7 +512,7 @@ def main() -> int:
     args = parser.parse_args()
     try:
         return args.func(args)
-    except (OSError, subprocess.CalledProcessError, WorkSuiteError) as exc:
+    except (DelegateRunnerError, OSError, subprocess.CalledProcessError, WorkSuiteError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
 

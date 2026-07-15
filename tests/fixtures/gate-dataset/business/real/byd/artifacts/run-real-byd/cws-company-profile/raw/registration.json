@@ -1,0 +1,17 @@
+{
+  "facts": {
+    "established_at": "1995-02-10",
+    "industry": "新能源车整车制造",
+    "legal_representative": "王传福",
+    "name": "比亚迪股份有限公司",
+    "registered_capital": "911719.7565万元",
+    "status": "开业（存续）",
+    "unified_social_credit_code": "91440300192317458F"
+  },
+  "observed_at": "2026-07-07",
+  "source_id": "registration",
+  "subject": {
+    "name": "比亚迪股份有限公司",
+    "unified_social_credit_code": "91440300192317458F"
+  }
+}

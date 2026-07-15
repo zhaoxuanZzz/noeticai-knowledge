@@ -23,3 +23,45 @@ rules:
   - 不要编造融资轮次、金额或估值数据
   - 数据缺失时输出 evidence_gaps
   - 所有结论必须说明依据字段
+
+gate:
+  handoff: required
+  required_outputs:
+    - financing_timeline
+    - investor_profile
+    - valuation_signals
+    - capital_market_status
+    - evidence_gaps
+  required_meta:
+    - subject
+    - sources
+    - data_as_of
+    - evidence_gaps
+    - wiki_writeback
+    - run_id
+  artifact_checks:
+    evidence_gaps:
+      type: list
+    financing_timeline:
+      type: object_or_string
+      non_empty: true
+  behavior_checks:
+    - id: no_fabricated_empty_fill
+      when: missing_data
+      require: evidence_gaps_non_null
+    - id: data_role_no_final_report
+      when: role == data
+      forbid_keys: [final_report, due_diligence_report]
+  semantic:
+    evidence: required
+    deterministic_checks:
+      - claim_evidence
+      - subject_identity
+      - freshness_disclosure
+      - source_conflict_disclosure
+      - negative_claim_coverage
+    required_claims:
+      - artifacts.financing_timeline.status
+    judge:
+      rubric: financing-history-v1
+      on_suspicious: needs_review

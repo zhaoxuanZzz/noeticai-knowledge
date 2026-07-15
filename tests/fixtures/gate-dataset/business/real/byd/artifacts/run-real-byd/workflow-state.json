@@ -1,0 +1,159 @@
+{
+  "schema_version": 1,
+  "run_id": "run-real-byd",
+  "workflow_skill": "cws-due-diligence",
+  "company": "比亚迪股份有限公司",
+  "frozen_kb": true,
+  "status": "passed",
+  "nodes": {
+    "task1": {
+      "id": "task1",
+      "stage": "profile",
+      "skill": "cws-company-profile",
+      "parents": [],
+      "handoff_path": "/Users/zhaoxuan/.cws/gate-dataset-staging/2026-07-13-history-import-v2/companies/byd/kb/artifacts/run-real-byd/cws-company-profile/handoff.json",
+      "node_gate": {
+        "mode": "node",
+        "run_id": "run-real-byd"
+      },
+      "final_gate": null,
+      "role": "data",
+      "role_skill": "cws-data-agent",
+      "required_skills": [
+        "cws-data-agent",
+        "cws-karpathy-llm-wiki"
+      ],
+      "title": "[CWS] 比亚迪股份有限公司 / profile / cws-company-profile",
+      "outputs": [
+        "company_profile"
+      ],
+      "frozen_kb": true,
+      "prompt": "执行 CWS 知识卡片：cws-company-profile\n\n目标公司：比亚迪股份有限公司\n输入 artifact：none\n输出 artifact：company_profile\n委派角色 skill：cws-data-agent\n必需搭配 skill：cws-karpathy-llm-wiki\n\n要求：\n- 按该 skill 的 SKILL.md 和 card.yaml 执行\n- 按 cws-karpathy-llm-wiki 规范优先检索企业信息库 wiki\n- 只使用冻结知识库，缺失或过期信息写入 evidence_gaps\n- 不编造数据，缺失字段写入 evidence_gaps\n- 完成时返回 artifact 摘要、来源、数据时间和 evidence_gaps\n运行隔离与 gate：\n- cws_gate: skill=cws-company-profile run_id=run-real-byd\n- 本次 run_id：run-real-byd\n- handoff 必须写入：/Users/zhaoxuan/.cws/gate-dataset-staging/2026-07-13-history-import-v2/companies/byd/kb/artifacts/run-real-byd/cws-company-profile/handoff.json\n- handoff 顶层必须包含相同的 run_id：run-real-byd\n- handoff.artifacts 必须覆盖该 skill card.yaml 的 gate.required_outputs（或全部 card.yaml outputs）\n- 如果 card.yaml 声明 gate.semantic，必须在 handoff 同目录写 evidence.json，并让 claim 引用可定位的冻结来源\n- 完成前必须运行：python3 /Users/zhaoxuan/code/company-work-suite/scripts/check_artifact_gate.py --mode node --skill cws-company-profile --handoff /Users/zhaoxuan/.cws/gate-dataset-staging/2026-07-13-history-import-v2/companies/byd/kb/artifacts/run-real-byd/cws-company-profile/handoff.json --run-id run-real-byd --plugin-root /Users/zhaoxuan/code/company-work-suite\n- node gate 非 0 时不得标记完成或交接下游。\n冻结知识库模式：\n- 只读取 CWS_COMPANY_KB_DIR 下已冻结的 raw/wiki；不得调用 MCP、网络搜索或其他外部数据源\n- 不更新或回写 raw/wiki；缺失、过期或无法确认的信息必须进入 evidence_gaps\n- 将本节点实际引用的最小冻结来源复制到 handoff 所在 artifact 目录的 raw/ 下\n- evidence.json 的 source_ref 只能引用该 artifact 目录内的 raw/ 文件\n\n",
+      "status": "passed",
+      "attempt": 1,
+      "gate_result_path": "/Users/zhaoxuan/.cws/gate-dataset-staging/2026-07-13-history-import-v2/companies/byd/kb/artifacts/run-real-byd/cws-company-profile/gate-result-2.json"
+    },
+    "task2": {
+      "id": "task2",
+      "stage": "analysis",
+      "skill": "cws-shareholder-structure",
+      "parents": [
+        "task1"
+      ],
+      "handoff_path": "/Users/zhaoxuan/.cws/gate-dataset-staging/2026-07-13-history-import-v2/companies/byd/kb/artifacts/run-real-byd/cws-shareholder-structure/handoff.json",
+      "node_gate": {
+        "mode": "node",
+        "run_id": "run-real-byd"
+      },
+      "final_gate": null,
+      "role": "data",
+      "role_skill": "cws-data-agent",
+      "required_skills": [
+        "cws-data-agent",
+        "cws-karpathy-llm-wiki"
+      ],
+      "title": "[CWS] 比亚迪股份有限公司 / analysis / cws-shareholder-structure",
+      "outputs": [
+        "shareholder_structure"
+      ],
+      "frozen_kb": true,
+      "prompt": "执行 CWS 知识卡片：cws-shareholder-structure\n\n目标公司：比亚迪股份有限公司\n输入 artifact：company_profile\n输出 artifact：shareholder_structure\n委派角色 skill：cws-data-agent\n必需搭配 skill：cws-karpathy-llm-wiki\n\n要求：\n- 按该 skill 的 SKILL.md 和 card.yaml 执行\n- 按 cws-karpathy-llm-wiki 规范优先检索企业信息库 wiki\n- 只使用冻结知识库，缺失或过期信息写入 evidence_gaps\n- 不编造数据，缺失字段写入 evidence_gaps\n- 完成时返回 artifact 摘要、来源、数据时间和 evidence_gaps\n运行隔离与 gate：\n- cws_gate: skill=cws-shareholder-structure run_id=run-real-byd\n- 本次 run_id：run-real-byd\n- handoff 必须写入：/Users/zhaoxuan/.cws/gate-dataset-staging/2026-07-13-history-import-v2/companies/byd/kb/artifacts/run-real-byd/cws-shareholder-structure/handoff.json\n- handoff 顶层必须包含相同的 run_id：run-real-byd\n- handoff.artifacts 必须覆盖该 skill card.yaml 的 gate.required_outputs（或全部 card.yaml outputs）\n- 如果 card.yaml 声明 gate.semantic，必须在 handoff 同目录写 evidence.json，并让 claim 引用可定位的冻结来源\n- 完成前必须运行：python3 /Users/zhaoxuan/code/company-work-suite/scripts/check_artifact_gate.py --mode node --skill cws-shareholder-structure --handoff /Users/zhaoxuan/.cws/gate-dataset-staging/2026-07-13-history-import-v2/companies/byd/kb/artifacts/run-real-byd/cws-shareholder-structure/handoff.json --run-id run-real-byd --plugin-root /Users/zhaoxuan/code/company-work-suite\n- node gate 非 0 时不得标记完成或交接下游。\n冻结知识库模式：\n- 只读取 CWS_COMPANY_KB_DIR 下已冻结的 raw/wiki；不得调用 MCP、网络搜索或其他外部数据源\n- 不更新或回写 raw/wiki；缺失、过期或无法确认的信息必须进入 evidence_gaps\n- 将本节点实际引用的最小冻结来源复制到 handoff 所在 artifact 目录的 raw/ 下\n- evidence.json 的 source_ref 只能引用该 artifact 目录内的 raw/ 文件\n\n",
+      "status": "passed",
+      "attempt": 1,
+      "gate_result_path": "/Users/zhaoxuan/.cws/gate-dataset-staging/2026-07-13-history-import-v2/companies/byd/kb/artifacts/run-real-byd/cws-shareholder-structure/gate-result-1.json"
+    },
+    "task3": {
+      "id": "task3",
+      "stage": "analysis",
+      "skill": "cws-litigation-risk",
+      "parents": [
+        "task1"
+      ],
+      "handoff_path": "/Users/zhaoxuan/.cws/gate-dataset-staging/2026-07-13-history-import-v2/companies/byd/kb/artifacts/run-real-byd/cws-litigation-risk/handoff.json",
+      "node_gate": {
+        "mode": "node",
+        "run_id": "run-real-byd"
+      },
+      "final_gate": null,
+      "role": "data",
+      "role_skill": "cws-data-agent",
+      "required_skills": [
+        "cws-data-agent",
+        "cws-karpathy-llm-wiki"
+      ],
+      "title": "[CWS] 比亚迪股份有限公司 / analysis / cws-litigation-risk",
+      "outputs": [
+        "litigation_risk"
+      ],
+      "frozen_kb": true,
+      "prompt": "执行 CWS 知识卡片：cws-litigation-risk\n\n目标公司：比亚迪股份有限公司\n输入 artifact：company_profile\n输出 artifact：litigation_risk\n委派角色 skill：cws-data-agent\n必需搭配 skill：cws-karpathy-llm-wiki\n\n要求：\n- 按该 skill 的 SKILL.md 和 card.yaml 执行\n- 按 cws-karpathy-llm-wiki 规范优先检索企业信息库 wiki\n- 只使用冻结知识库，缺失或过期信息写入 evidence_gaps\n- 不编造数据，缺失字段写入 evidence_gaps\n- 完成时返回 artifact 摘要、来源、数据时间和 evidence_gaps\n运行隔离与 gate：\n- cws_gate: skill=cws-litigation-risk run_id=run-real-byd\n- 本次 run_id：run-real-byd\n- handoff 必须写入：/Users/zhaoxuan/.cws/gate-dataset-staging/2026-07-13-history-import-v2/companies/byd/kb/artifacts/run-real-byd/cws-litigation-risk/handoff.json\n- handoff 顶层必须包含相同的 run_id：run-real-byd\n- handoff.artifacts 必须覆盖该 skill card.yaml 的 gate.required_outputs（或全部 card.yaml outputs）\n- 如果 card.yaml 声明 gate.semantic，必须在 handoff 同目录写 evidence.json，并让 claim 引用可定位的冻结来源\n- 完成前必须运行：python3 /Users/zhaoxuan/code/company-work-suite/scripts/check_artifact_gate.py --mode node --skill cws-litigation-risk --handoff /Users/zhaoxuan/.cws/gate-dataset-staging/2026-07-13-history-import-v2/companies/byd/kb/artifacts/run-real-byd/cws-litigation-risk/handoff.json --run-id run-real-byd --plugin-root /Users/zhaoxuan/code/company-work-suite\n- node gate 非 0 时不得标记完成或交接下游。\n冻结知识库模式：\n- 只读取 CWS_COMPANY_KB_DIR 下已冻结的 raw/wiki；不得调用 MCP、网络搜索或其他外部数据源\n- 不更新或回写 raw/wiki；缺失、过期或无法确认的信息必须进入 evidence_gaps\n- 将本节点实际引用的最小冻结来源复制到 handoff 所在 artifact 目录的 raw/ 下\n- evidence.json 的 source_ref 只能引用该 artifact 目录内的 raw/ 文件\n\n",
+      "status": "passed",
+      "attempt": 1,
+      "gate_result_path": "/Users/zhaoxuan/.cws/gate-dataset-staging/2026-07-13-history-import-v2/companies/byd/kb/artifacts/run-real-byd/cws-litigation-risk/gate-result-1.json"
+    },
+    "task4": {
+      "id": "task4",
+      "stage": "analysis",
+      "skill": "cws-financing-history",
+      "parents": [
+        "task1"
+      ],
+      "handoff_path": "/Users/zhaoxuan/.cws/gate-dataset-staging/2026-07-13-history-import-v2/companies/byd/kb/artifacts/run-real-byd/cws-financing-history/handoff.json",
+      "node_gate": {
+        "mode": "node",
+        "run_id": "run-real-byd"
+      },
+      "final_gate": null,
+      "role": "data",
+      "role_skill": "cws-data-agent",
+      "required_skills": [
+        "cws-data-agent",
+        "cws-karpathy-llm-wiki"
+      ],
+      "title": "[CWS] 比亚迪股份有限公司 / analysis / cws-financing-history",
+      "outputs": [
+        "financing_history"
+      ],
+      "frozen_kb": true,
+      "prompt": "执行 CWS 知识卡片：cws-financing-history\n\n目标公司：比亚迪股份有限公司\n输入 artifact：company_profile\n输出 artifact：financing_history\n委派角色 skill：cws-data-agent\n必需搭配 skill：cws-karpathy-llm-wiki\n\n要求：\n- 按该 skill 的 SKILL.md 和 card.yaml 执行\n- 按 cws-karpathy-llm-wiki 规范优先检索企业信息库 wiki\n- 只使用冻结知识库，缺失或过期信息写入 evidence_gaps\n- 不编造数据，缺失字段写入 evidence_gaps\n- 完成时返回 artifact 摘要、来源、数据时间和 evidence_gaps\n运行隔离与 gate：\n- cws_gate: skill=cws-financing-history run_id=run-real-byd\n- 本次 run_id：run-real-byd\n- handoff 必须写入：/Users/zhaoxuan/.cws/gate-dataset-staging/2026-07-13-history-import-v2/companies/byd/kb/artifacts/run-real-byd/cws-financing-history/handoff.json\n- handoff 顶层必须包含相同的 run_id：run-real-byd\n- handoff.artifacts 必须覆盖该 skill card.yaml 的 gate.required_outputs（或全部 card.yaml outputs）\n- 如果 card.yaml 声明 gate.semantic，必须在 handoff 同目录写 evidence.json，并让 claim 引用可定位的冻结来源\n- 完成前必须运行：python3 /Users/zhaoxuan/code/company-work-suite/scripts/check_artifact_gate.py --mode node --skill cws-financing-history --handoff /Users/zhaoxuan/.cws/gate-dataset-staging/2026-07-13-history-import-v2/companies/byd/kb/artifacts/run-real-byd/cws-financing-history/handoff.json --run-id run-real-byd --plugin-root /Users/zhaoxuan/code/company-work-suite\n- node gate 非 0 时不得标记完成或交接下游。\n冻结知识库模式：\n- 只读取 CWS_COMPANY_KB_DIR 下已冻结的 raw/wiki；不得调用 MCP、网络搜索或其他外部数据源\n- 不更新或回写 raw/wiki；缺失、过期或无法确认的信息必须进入 evidence_gaps\n- 将本节点实际引用的最小冻结来源复制到 handoff 所在 artifact 目录的 raw/ 下\n- evidence.json 的 source_ref 只能引用该 artifact 目录内的 raw/ 文件\n\n",
+      "status": "passed",
+      "attempt": 1,
+      "gate_result_path": "/Users/zhaoxuan/.cws/gate-dataset-staging/2026-07-13-history-import-v2/companies/byd/kb/artifacts/run-real-byd/cws-financing-history/gate-result-1.json"
+    },
+    "task5": {
+      "id": "task5",
+      "stage": "report",
+      "skill": "cws-due-diligence",
+      "parents": [
+        "task1",
+        "task2",
+        "task3",
+        "task4"
+      ],
+      "handoff_path": "/Users/zhaoxuan/.cws/gate-dataset-staging/2026-07-13-history-import-v2/companies/byd/kb/artifacts/run-real-byd/cws-due-diligence/handoff.json",
+      "node_gate": {
+        "mode": "node",
+        "run_id": "run-real-byd"
+      },
+      "final_gate": {
+        "mode": "final",
+        "skill": "cws-due-diligence",
+        "run_id": "run-real-byd"
+      },
+      "role": "gen",
+      "role_skill": "cws-gen-agent",
+      "required_skills": [
+        "cws-gen-agent"
+      ],
+      "title": "[CWS] 比亚迪股份有限公司 / report / cws-due-diligence",
+      "outputs": [
+        "due_diligence_report"
+      ],
+      "frozen_kb": true,
+      "prompt": "执行 CWS 编排型报告卡片：cws-due-diligence\n\n目标公司：比亚迪股份有限公司\n消费前置 artifact：company_profile, shareholder_structure, litigation_risk, financing_history\n输出最终 artifact：due_diligence_report\n委派角色 skill：cws-gen-agent\n\n要求：\n- 只综合父任务交接中的 artifact、来源、数据时间和 evidence_gaps\n- 不重新取数，不补造缺失信息\n- 按该 skill 的 SKILL.md 和 card.yaml 输出报告\n- 完成时返回最终报告摘要和关键 evidence_gaps\n运行隔离与 gate：\n- cws_gate: skill=cws-due-diligence run_id=run-real-byd\n- 本次 run_id：run-real-byd\n- handoff 必须写入：/Users/zhaoxuan/.cws/gate-dataset-staging/2026-07-13-history-import-v2/companies/byd/kb/artifacts/run-real-byd/cws-due-diligence/handoff.json\n- handoff 顶层必须包含相同的 run_id：run-real-byd\n- handoff.artifacts 必须覆盖该 skill card.yaml 的 gate.required_outputs（或全部 card.yaml outputs）\n- 如果 card.yaml 声明 gate.semantic，必须在 handoff 同目录写 evidence.json，并让 claim 引用可定位的冻结来源\n- 完成前必须运行：python3 /Users/zhaoxuan/code/company-work-suite/scripts/check_artifact_gate.py --mode node --skill cws-due-diligence --handoff /Users/zhaoxuan/.cws/gate-dataset-staging/2026-07-13-history-import-v2/companies/byd/kb/artifacts/run-real-byd/cws-due-diligence/handoff.json --run-id run-real-byd --plugin-root /Users/zhaoxuan/code/company-work-suite\n- node gate 非 0 时不得标记完成或交接下游。\n- 最终报告 node gate 通过后，再运行终局 gate：\n  python3 /Users/zhaoxuan/code/company-work-suite/scripts/check_artifact_gate.py --mode final --skill cws-due-diligence --run-dir /Users/zhaoxuan/.cws/gate-dataset-staging/2026-07-13-history-import-v2/companies/byd/kb --run-id run-real-byd --plugin-root /Users/zhaoxuan/code/company-work-suite\n\n冻结知识库模式：\n- 只读取 CWS_COMPANY_KB_DIR 下已冻结的 raw/wiki；不得调用 MCP、网络搜索或其他外部数据源\n- 不更新或回写 raw/wiki；缺失、过期或无法确认的信息必须进入 evidence_gaps\n- 将本节点实际引用的最小冻结来源复制到 handoff 所在 artifact 目录的 raw/ 下\n- evidence.json 的 source_ref 只能引用该 artifact 目录内的 raw/ 文件\n\n",
+      "status": "passed",
+      "attempt": 1,
+      "gate_result_path": "/Users/zhaoxuan/.cws/gate-dataset-staging/2026-07-13-history-import-v2/companies/byd/kb/artifacts/run-real-byd/cws-due-diligence/gate-result-1.json"
+    }
+  }
+}

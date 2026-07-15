@@ -15,6 +15,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "skills" / "cws-workflow" / "scripts" / "workflow_cli.py"
 PASS_HANDOFF = ROOT / "tests" / "fixtures" / "gates" / "company-profile" / "pass.handoff.json"
+PASS_EVIDENCE = ROOT / "tests" / "fixtures" / "gates" / "company-profile" / "evidence.json"
+PASS_RAW = ROOT / "tests" / "fixtures" / "gates" / "company-profile" / "raw" / "company.json"
 
 
 class DelegateRunnerIntegrationTest(unittest.TestCase):
@@ -23,6 +25,7 @@ class DelegateRunnerIntegrationTest(unittest.TestCase):
         self.company_kb = Path(self.temporary.name) / "company-kb"
         self.env = os.environ.copy()
         self.env["CWS_COMPANY_KB_DIR"] = str(self.company_kb)
+        self.env.setdefault("CWS_JUDGE_MODE", "mock")
         self.run_id = "run-delegate-test"
 
     def tearDown(self) -> None:
@@ -38,7 +41,7 @@ class DelegateRunnerIntegrationTest(unittest.TestCase):
             check=False,
         )
 
-    def init(self) -> dict[str, object]:
+    def init(self, *extra: str) -> dict[str, object]:
         result = self.run_cli(
             "delegate",
             "init",
@@ -48,9 +51,36 @@ class DelegateRunnerIntegrationTest(unittest.TestCase):
             "杭州XX科技有限公司",
             "--run-id",
             self.run_id,
+            *extra,
         )
         self.assertEqual(0, result.returncode, result.stderr)
         return json.loads(result.stdout)
+
+    def write_profile_artifacts(self) -> Path:
+        directory = self.company_kb / "artifacts" / self.run_id / "cws-company-profile"
+        directory.mkdir(parents=True, exist_ok=True)
+        handoff = directory / "handoff.json"
+        data = json.loads(PASS_HANDOFF.read_text(encoding="utf-8"))
+        data["run_id"] = self.run_id
+        handoff.write_text(json.dumps(data), encoding="utf-8")
+        evidence = json.loads(PASS_EVIDENCE.read_text(encoding="utf-8"))
+        evidence["run_id"] = self.run_id
+        (directory / "evidence.json").write_text(json.dumps(evidence), encoding="utf-8")
+        raw = directory / "raw" / "company.json"
+        raw.parent.mkdir()
+        raw.write_text(PASS_RAW.read_text(encoding="utf-8"), encoding="utf-8")
+        return handoff
+
+    def write_profile_attempt(self, directory: Path) -> None:
+        data = json.loads(PASS_HANDOFF.read_text(encoding="utf-8"))
+        data["run_id"] = self.run_id
+        (directory / "handoff.json").write_text(json.dumps(data), encoding="utf-8")
+        evidence = json.loads(PASS_EVIDENCE.read_text(encoding="utf-8"))
+        evidence["run_id"] = self.run_id
+        (directory / "evidence.json").write_text(json.dumps(evidence), encoding="utf-8")
+        raw = directory / "raw" / "company.json"
+        raw.parent.mkdir()
+        raw.write_text(PASS_RAW.read_text(encoding="utf-8"), encoding="utf-8")
 
     def test_init_persists_structured_plan_and_returns_first_ready_node(self) -> None:
         output = self.init()
@@ -62,10 +92,20 @@ class DelegateRunnerIntegrationTest(unittest.TestCase):
         first = state["nodes"]["task1"]
         self.assertEqual("pending", first["status"])
         self.assertEqual("cws-company-profile", first["skill"])
+        self.assertNotIn("check_artifact_gate.py", first["prompt"])
         self.assertEqual(self.run_id, first["node_gate"]["run_id"])
         self.assertTrue(first["handoff_path"].endswith("cws-company-profile/handoff.json"))
         self.assertIsNone(first["final_gate"])
         self.assertEqual("cws-due-diligence", state["nodes"]["task5"]["final_gate"]["skill"])
+
+    def test_frozen_kb_is_persisted_in_delegate_state(self) -> None:
+        self.init("--frozen-kb")
+
+        state_path = self.company_kb / "artifacts" / self.run_id / "workflow-state.json"
+        state = json.loads(state_path.read_text(encoding="utf-8"))
+        self.assertTrue(state["frozen_kb"])
+        self.assertTrue(all(node["frozen_kb"] for node in state["nodes"].values()))
+        self.assertIn("冻结知识库模式", state["nodes"]["task1"]["prompt"])
 
     def test_missing_handoff_blocks_completion_and_keeps_children_pending(self) -> None:
         self.init()
@@ -85,11 +125,7 @@ class DelegateRunnerIntegrationTest(unittest.TestCase):
     def test_passed_gate_unlocks_parallel_children_and_complete_is_idempotent(self) -> None:
         self.init()
         self.run_cli("delegate", "start", "--run-id", self.run_id, "--node", "task1")
-        handoff = self.company_kb / "artifacts" / self.run_id / "cws-company-profile" / "handoff.json"
-        handoff.parent.mkdir(parents=True)
-        data = json.loads(PASS_HANDOFF.read_text(encoding="utf-8"))
-        data["run_id"] = self.run_id
-        handoff.write_text(json.dumps(data), encoding="utf-8")
+        self.write_profile_artifacts()
 
         completed = self.run_cli("delegate", "complete", "--run-id", self.run_id, "--node", "task1")
         self.assertEqual(0, completed.returncode, completed.stderr)
@@ -109,11 +145,7 @@ class DelegateRunnerIntegrationTest(unittest.TestCase):
         blocked = self.run_cli("delegate", "complete", "--run-id", self.run_id, "--node", "task1")
         self.assertEqual(1, blocked.returncode)
 
-        handoff = self.company_kb / "artifacts" / self.run_id / "cws-company-profile" / "handoff.json"
-        handoff.parent.mkdir(parents=True, exist_ok=True)
-        data = json.loads(PASS_HANDOFF.read_text(encoding="utf-8"))
-        data["run_id"] = self.run_id
-        handoff.write_text(json.dumps(data), encoding="utf-8")
+        handoff = self.write_profile_artifacts()
         repaired = self.run_cli("delegate", "complete", "--run-id", self.run_id, "--node", "task1")
 
         self.assertEqual(0, repaired.returncode, repaired.stderr)
@@ -131,6 +163,70 @@ class DelegateRunnerIntegrationTest(unittest.TestCase):
         self.assertEqual(0, failed.returncode, failed.stderr)
         restarted = self.run_cli("delegate", "start", "--run-id", self.run_id, "--node", "task1")
         self.assertEqual(2, json.loads(restarted.stdout)["attempt"])
+
+    def test_loop_enabled_delegate_uses_attempt_path_and_promotes_on_pass(self) -> None:
+        self.init("--loop")
+        started = self.run_cli("delegate", "start", "--run-id", self.run_id, "--node", "task1")
+        self.assertEqual(0, started.returncode, started.stderr)
+        claim = json.loads(started.stdout)
+        self.assertEqual("execute", claim["action"])
+        attempt_dir = Path(claim["attempt_dir"])
+        self.write_profile_attempt(attempt_dir)
+
+        completed = self.run_cli(
+            "delegate",
+            "complete",
+            "--run-id",
+            self.run_id,
+            "--node",
+            "task1",
+            "--lease-id",
+            claim["lease_id"],
+        )
+        self.assertEqual(0, completed.returncode, completed.stderr)
+        result = json.loads(completed.stdout)
+        self.assertEqual("passed", result["status"])
+        self.assertTrue(
+            (
+                self.company_kb
+                / "artifacts"
+                / self.run_id
+                / "cws-company-profile"
+                / "handoff.json"
+            ).is_file()
+        )
+        ready = json.loads(
+            self.run_cli("delegate", "ready", "--run-id", self.run_id).stdout
+        )
+        self.assertEqual(["task2", "task3", "task4"], ready["ready"])
+
+    def test_loop_enabled_delegate_failure_creates_new_attempt(self) -> None:
+        self.init("--loop")
+        first = json.loads(
+            self.run_cli(
+                "delegate", "start", "--run-id", self.run_id, "--node", "task1"
+            ).stdout
+        )
+        failed = self.run_cli(
+            "delegate",
+            "fail",
+            "--run-id",
+            self.run_id,
+            "--node",
+            "task1",
+            "--lease-id",
+            first["lease_id"],
+            "--reason",
+            "maker crashed",
+        )
+        self.assertEqual(0, failed.returncode, failed.stderr)
+        self.assertEqual("retryable", json.loads(failed.stdout)["status"])
+
+        second = self.run_cli(
+            "delegate", "start", "--run-id", self.run_id, "--node", "task1"
+        )
+        self.assertEqual(0, second.returncode, second.stderr)
+        self.assertEqual(2, json.loads(second.stdout)["attempt"])
 
 
 if __name__ == "__main__":

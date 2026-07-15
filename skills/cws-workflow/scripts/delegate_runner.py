@@ -30,7 +30,7 @@ def ready_nodes(state: dict[str, Any]) -> list[str]:
     return [
         node_id
         for node_id, node in nodes.items()
-        if node["status"] in {"pending", "failed"}
+        if node["status"] in {"pending", "failed", "retryable"}
         and all(nodes[parent]["status"] == "passed" for parent in node["parents"])
     ]
 
@@ -115,7 +115,7 @@ def complete(company_kb: Path, run_id: str, node_id: str) -> dict[str, Any]:
         return json.loads(Path(result_path).read_text(encoding="utf-8")) if result_path else {
             "run_id": run_id, "node_id": node_id, "status": "passed"
         }
-    if node["status"] not in {"running", "blocked"}:
+    if node["status"] not in {"running", "blocked", "needs_review"}:
         raise DelegateRunnerError(f"node cannot be completed from status {node['status']}: {node_id}")
 
     node["status"] = "validating"
@@ -124,11 +124,17 @@ def complete(company_kb: Path, run_id: str, node_id: str) -> dict[str, Any]:
         sys.path.insert(0, str(ROOT / "scripts"))
     from check_artifact_gate import check_final, check_node
 
-    code, errors = check_node(ROOT, node["skill"], Path(node["handoff_path"]), run_id)
+    outcome = check_node(ROOT, node["skill"], Path(node["handoff_path"]), run_id)
     gate = "node"
-    if code == 0 and node.get("final_gate"):
-        code, errors = check_final(ROOT, state["workflow_skill"], company_kb, run_id)
+    if outcome.exit_code == 0 and node.get("final_gate"):
+        outcome = check_final(ROOT, state["workflow_skill"], company_kb, run_id)
         gate = "final"
+    if outcome.decision == "passed":
+        status = "passed"
+    elif outcome.decision == "needs_review":
+        status = "needs_review"
+    else:
+        status = "blocked"
     result_dir = Path(node["handoff_path"]).parent
     gate_attempt = len(list(result_dir.glob("gate-result-*.json"))) + 1
     result = {
@@ -136,13 +142,16 @@ def complete(company_kb: Path, run_id: str, node_id: str) -> dict[str, Any]:
         "node_id": node_id,
         "skill": node["skill"],
         "attempt": gate_attempt,
-        "status": "passed" if code == 0 else "blocked",
+        "status": status,
+        "decision": outcome.decision,
         "gate": gate,
-        "exit_code": code,
-        "errors": [] if code == 0 else errors,
+        "exit_code": outcome.exit_code,
+        "errors": [] if outcome.exit_code == 0 else list(outcome.messages),
         "handoff_path": node["handoff_path"],
         "checked_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
+    if outcome.judge is not None:
+        result["judge"] = outcome.judge
     result_path = _write_gate_result(node, result)
     node["gate_result_path"] = str(result_path)
     node["status"] = result["status"]
@@ -151,6 +160,8 @@ def complete(company_kb: Path, run_id: str, node_id: str) -> dict[str, Any]:
         state["status"] = "passed"
     elif "blocked" in statuses:
         state["status"] = "blocked"
+    elif "needs_review" in statuses:
+        state["status"] = "needs_review"
     else:
         state["status"] = "running"
     write_state(path, state)
@@ -163,6 +174,7 @@ def initialize(
     workflow_skill: str,
     company: str,
     plan_nodes: list[dict[str, Any]],
+    frozen_kb: bool = False,
 ) -> dict[str, Any]:
     path = state_path(company_kb, run_id)
     if path.exists():
@@ -182,6 +194,7 @@ def initialize(
         "run_id": run_id,
         "workflow_skill": workflow_skill,
         "company": company,
+        "frozen_kb": frozen_kb,
         "status": "running",
         "nodes": nodes,
     }

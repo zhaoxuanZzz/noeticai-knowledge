@@ -24,6 +24,48 @@ rules:
 
 gate:
   handoff: required
+  required_outputs:
+    - target_overview
+    - governance_assessment
+    - risk_assessment
+    - financing_and_valuation_signals
+    - investment_view
+    - evidence_gaps
+  required_meta:
+    - subject
+    - sources
+    - data_as_of
+    - evidence_gaps
+    - wiki_writeback
+    - run_id
+  artifact_checks:
+    evidence_gaps:
+      type: list
+    target_overview:
+      type: object_or_string
+      non_empty: true
+    risk_assessment:
+      type: object_or_string
+      non_empty: true
+    investment_view:
+      type: object_or_string
+      non_empty: true
+  behavior_checks:
+    - id: no_fabricated_empty_fill
+      when: missing_data
+      require: evidence_gaps_non_null
   final:
     require_parent_artifacts: [company_profile, shareholder_structure, litigation_risk, financing_history]
     require_report_handoff: true
+  semantic:
+    evidence: required
+    deterministic_checks:
+      - claim_evidence
+      - subject_identity
+      - source_conflict_disclosure
+    required_claims:
+      - artifacts.risk_assessment.level
+      - artifacts.investment_view.stance
+    judge:
+      rubric: investment-analysis-v1
+      on_suspicious: needs_review

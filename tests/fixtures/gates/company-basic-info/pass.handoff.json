@@ -1,0 +1,21 @@
+{
+  "skill_id": "cws-company-basic-info",
+  "run_id": "run-test",
+  "role": "data",
+  "subject": "杭州示例科技有限公司",
+  "sources": [{"name": "qcc", "ref": "company/basic"}],
+  "data_as_of": "2026-07-14",
+  "wiki_writeback": {"status": "skipped", "paths": []},
+  "evidence_gaps": [],
+  "artifacts": {
+    "company_name_confirmed": "杭州示例科技有限公司",
+    "unified_social_credit_code": "91330100TEST000001",
+    "legal_representative": "张三",
+    "registered_capital": "1000万人民币",
+    "establishment_date": "2018-01-01",
+    "operating_status": "存续",
+    "registered_address": "浙江省杭州市",
+    "business_scope": "软件开发",
+    "evidence_gaps": []
+  }
+}

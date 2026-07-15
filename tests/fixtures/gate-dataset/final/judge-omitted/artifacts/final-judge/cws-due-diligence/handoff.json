@@ -1,0 +1,9 @@
+{
+  "run_id": "final-judge",
+  "subject": "杭州示例科技有限公司",
+  "report_path": "report.md",
+  "artifacts": {
+    "litigation_and_operating_risks": {"risk": "高风险"},
+    "recommendations": "需重点关注该风险"
+  }
+}

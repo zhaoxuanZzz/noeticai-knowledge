@@ -54,3 +54,17 @@ gate:
     - id: data_role_no_final_report
       when: role == data
       forbid_keys: [final_report, due_diligence_report]
+  semantic:
+    evidence: required
+    deterministic_checks:
+      - claim_evidence
+      - subject_identity
+      - freshness_disclosure
+      - source_conflict_disclosure
+      - negative_claim_coverage
+    required_claims:
+      - artifacts.company_summary.status
+      - artifacts.operating_status.status
+    judge:
+      rubric: company-profile-v1
+      on_suspicious: needs_review

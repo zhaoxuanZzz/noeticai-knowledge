@@ -85,7 +85,7 @@ OpenAI 兼容 HTTP（Qwen 等）  或  --mock
 | `CWS_JUDGE_MODE` | `live`（默认）或 `mock` |
 | `CWS_JUDGE_BASE_URL` | OpenAI 兼容 base URL（如 DashScope compatible-mode） |
 | `CWS_JUDGE_API_KEY` | API key；亦接受 `OPENAI_API_KEY` |
-| `CWS_JUDGE_MODEL` | 模型 ID，例如 `qwen-3.7-max` |
+| `CWS_JUDGE_MODEL` | 模型 ID，例如 `qwen3.7-max` |
 | `CWS_JUDGE_TIMEOUT_SECONDS` | 单次请求超时，默认与现有 120s 对齐 |
 | `CWS_JUDGE_ENABLED` | `0` 时跳过调用，但仍记 `needs_review` + `judge_disabled` |
 
@@ -96,7 +96,7 @@ Qwen 示例（仅本地/宿主环境配置）：
 ```bash
 export CWS_JUDGE_BASE_URL="https://dashscope.aliyuncs.com/compatible-mode/v1"
 export CWS_JUDGE_API_KEY="<qwen-key>"
-export CWS_JUDGE_MODEL="qwen-3.7-max"
+export CWS_JUDGE_MODEL="qwen3.7-max"
 ```
 
 ## 5. 运行时接入与结果映射

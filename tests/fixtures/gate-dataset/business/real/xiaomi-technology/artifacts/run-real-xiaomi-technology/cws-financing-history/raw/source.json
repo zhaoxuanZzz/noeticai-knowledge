@@ -1,0 +1,140 @@
+{
+  "facts": {
+    "data_sources": {
+      "bond_issuance": {
+        "result": "所有数据源均无有效数据",
+        "tool": "mcp_noeticai_mcp_get_bond_issuance_history"
+      },
+      "qcc_announcements": {
+        "result": "未发现任何记录",
+        "tool": "mcp_qcc_operation_get_company_announcement"
+      },
+      "qcc_external_investments": {
+        "summary": "53条对外投资记录",
+        "tool": "mcp_qcc_company_get_external_investments",
+        "top_investments": [
+          {
+            "capital": "53亿",
+            "name": "武汉壹捌壹零企业管理",
+            "ratio": "100%"
+          },
+          {
+            "capital": "24.77亿",
+            "name": "天津金星创业投资",
+            "ratio": "100%"
+          },
+          {
+            "capital": "20亿",
+            "name": "湖北小米长江产业基金",
+            "ratio": "16.67%"
+          },
+          {
+            "capital": "15亿",
+            "name": "瀚星创业投资",
+            "ratio": "100%"
+          },
+          {
+            "capital": "11亿",
+            "name": "小米私募股权基金",
+            "ratio": "100%"
+          },
+          {
+            "capital": "10亿",
+            "name": "小米汽车科技",
+            "ratio": "100%"
+          },
+          {
+            "capital": "2.91亿",
+            "name": "捷付睿通支付",
+            "ratio": "97%"
+          }
+        ]
+      },
+      "qcc_financing_records": {
+        "records": [
+          {
+            "amount": "$4,100万",
+            "date": "2011-07-01",
+            "investors": [
+              "IDG资本",
+              "五源资本",
+              "启明创投",
+              "顺为资本"
+            ],
+            "round": "A轮"
+          },
+          {
+            "amount": "$9,000万",
+            "date": "2011-12-01",
+            "investors": [
+              "IDG资本",
+              "五源资本",
+              "启明创投",
+              "淡马锡",
+              "顺为资本",
+              "高通风投"
+            ],
+            "round": "B轮"
+          },
+          {
+            "amount": "$2.16亿",
+            "date": "2012-06-01",
+            "investors": [
+              "DST Global",
+              "淡马锡"
+            ],
+            "round": "C轮"
+          },
+          {
+            "amount": "$1亿",
+            "date": "2013-09-12",
+            "investors": [
+              "DST Global"
+            ],
+            "round": "D轮"
+          },
+          {
+            "amount": "$11亿",
+            "date": "2014-12-29",
+            "investors": [
+              "DST Global",
+              "PSG Equity",
+              "云锋基金",
+              "全明星投资基金",
+              "厚朴投资"
+            ],
+            "round": "E轮"
+          },
+          {
+            "amount": "HK$239.75亿",
+            "date": "2018-06-28",
+            "details": {
+              "code": "01810.HK",
+              "price": "HK$17",
+              "shares": "21.8亿股"
+            },
+            "round": "赴港上市"
+          }
+        ],
+        "summary": "6条融资记录：5条创投融资（A-E轮）+ 1条上市融资（赴港上市）",
+        "timestamp": "2026-07-10",
+        "tool": "mcp_qcc_operation_get_financing_records"
+      },
+      "qcc_investment_institution": {
+        "result": "未发现任何记录",
+        "tool": "mcp_qcc_operation_get_investment_institution"
+      },
+      "qcc_listing_info": {
+        "result": "未发现任何记录（本实体为非上市主体）",
+        "tool": "mcp_qcc_company_get_listing_info"
+      }
+    },
+    "entity": "小米科技有限责任公司"
+  },
+  "observed_at": "2026-07-10",
+  "source_id": "financing",
+  "subject": {
+    "name": "小米科技有限责任公司",
+    "unified_social_credit_code": "91110108551385082Q"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "skill_id": "cws-financing-history",
+  "run_id": "run-test",
+  "role": "data",
+  "subject": "杭州示例科技有限公司",
+  "sources": [{"name": "qcc", "ref": "company/financing"}],
+  "data_as_of": "2026-07-14",
+  "wiki_writeback": {"status": "skipped", "paths": []},
+  "evidence_gaps": [],
+  "artifacts": {
+    "financing_timeline": {
+      "status": "未检索到公开融资轮次",
+      "rounds": []
+    },
+    "investor_profile": "无公开机构投资方记录",
+    "valuation_signals": "无公开估值",
+    "capital_market_status": "未上市",
+    "evidence_gaps": []
+  }
+}

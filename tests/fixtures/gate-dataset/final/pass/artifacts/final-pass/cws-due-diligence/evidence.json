@@ -1,0 +1,26 @@
+{
+  "run_id": "final-pass",
+  "skill_id": "cws-due-diligence",
+  "subject": {"name": "杭州示例科技有限公司"},
+  "evidence": [{
+    "id": "e-risk",
+    "field": "litigation_and_operating_risks",
+    "value": "低风险",
+    "source_ref": "raw/report.json#/risk"
+  }, {
+    "id": "e-recommendation",
+    "field": "recommendations",
+    "value": "继续核验后续变化",
+    "source_ref": "raw/report.json#/recommendation"
+  }],
+  "claims": [{
+    "artifact_path": "artifacts.litigation_and_operating_risks.risk",
+    "value": "低风险",
+    "evidence_refs": ["e-risk"]
+  }, {
+    "artifact_path": "artifacts.recommendations",
+    "value": "继续核验后续变化",
+    "evidence_refs": ["e-recommendation"]
+  }],
+  "conflicts": []
+}

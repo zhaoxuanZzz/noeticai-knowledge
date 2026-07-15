@@ -1,0 +1,18 @@
+{
+  "baseline_dataset": "..",
+  "companies": [
+    {
+      "case_id": "normal-active-company",
+      "subject": "杭州示例科技有限公司",
+      "unified_social_credit_code": "91330100TEST000001",
+      "refresh_frequency": "monthly",
+      "snapshot_file": "../business/shared/raw/company.json",
+      "target_file": "business/shared/raw/company.json"
+    },
+    {
+      "case_id": "ambiguous-company-name",
+      "subject": "示例科技",
+      "refresh_frequency": "monthly"
+    }
+  ]
+}

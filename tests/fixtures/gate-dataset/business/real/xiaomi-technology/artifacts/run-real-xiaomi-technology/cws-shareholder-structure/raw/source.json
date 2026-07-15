@@ -1,0 +1,29 @@
+{
+  "facts": {
+    "shareholders": [
+      {
+        "name": "雷军",
+        "paid_amount": "143934.0478",
+        "paid_date": "2015-09-30",
+        "share_ratio": "97.4816%",
+        "subscribed_amount": "143934.0478",
+        "subscribed_date": "2015-10-30"
+      },
+      {
+        "name": "刘德",
+        "paid_amount": "3718.4963",
+        "paid_date": "2015-09-30",
+        "share_ratio": "2.5184%",
+        "subscribed_amount": "3718.4963",
+        "subscribed_date": "2015-10-30"
+      }
+    ],
+    "summary": "该查询实体共有2条股东信息记录"
+  },
+  "observed_at": "2026-07-10",
+  "source_id": "shareholders",
+  "subject": {
+    "name": "小米科技有限责任公司",
+    "unified_social_credit_code": "91110108551385082Q"
+  }
+}

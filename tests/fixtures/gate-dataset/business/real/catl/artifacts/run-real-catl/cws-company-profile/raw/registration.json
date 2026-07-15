@@ -1,0 +1,17 @@
+{
+  "facts": {
+    "established_at": "2011-12-16",
+    "industry": "锂离子电池制造",
+    "legal_representative": "曾毓群",
+    "name": "宁德时代新能源科技股份有限公司",
+    "registered_capital": "440339.4911万元",
+    "status": "存续（在营、开业、在册）",
+    "unified_social_credit_code": "91350900587527783P"
+  },
+  "observed_at": "2026-07-07",
+  "source_id": "registration",
+  "subject": {
+    "name": "宁德时代新能源科技股份有限公司",
+    "unified_social_credit_code": "91350900587527783P"
+  }
+}

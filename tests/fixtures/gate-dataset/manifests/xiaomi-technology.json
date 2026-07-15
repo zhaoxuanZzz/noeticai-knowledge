@@ -1,0 +1,67 @@
+{
+  "cases": [
+    {
+      "case_id": "xiaomi-company-profile-pass",
+      "kind": "node",
+      "skill_id": "cws-company-profile",
+      "run_id": "run-real-xiaomi-technology",
+      "handoff": "business/real/xiaomi-technology/artifacts/run-real-xiaomi-technology/cws-company-profile/handoff.json",
+      "evidence": "business/real/xiaomi-technology/artifacts/run-real-xiaomi-technology/cws-company-profile/evidence.json",
+      "case_root": "business/real/xiaomi-technology/artifacts/run-real-xiaomi-technology/cws-company-profile",
+      "evaluation_at": "2026-07-13",
+      "source_hashes": {
+        "business/real/xiaomi-technology/artifacts/run-real-xiaomi-technology/cws-company-profile/raw/registration.json": "sha256:e9fc2bb0d522fc5e56a3fa9400f9d811986d05f67096728a0437c76e4b0b4dcf"
+      },
+      "expected_decision": "passed",
+      "quality_state": "complete",
+      "expected_reasons": [],
+      "tags": ["business", "node", "xiaomi", "real"]
+    },
+    {
+      "case_id": "xiaomi-shareholder-structure-pass",
+      "kind": "node",
+      "skill_id": "cws-shareholder-structure",
+      "run_id": "run-real-xiaomi-technology",
+      "handoff": "business/real/xiaomi-technology/artifacts/run-real-xiaomi-technology/cws-shareholder-structure/handoff.json",
+      "expected_decision": "passed",
+      "quality_state": "complete",
+      "expected_reasons": [],
+      "tags": ["business", "node", "xiaomi", "real"]
+    },
+    {
+      "case_id": "xiaomi-litigation-risk-pass",
+      "kind": "node",
+      "skill_id": "cws-litigation-risk",
+      "run_id": "run-real-xiaomi-technology",
+      "handoff": "business/real/xiaomi-technology/artifacts/run-real-xiaomi-technology/cws-litigation-risk/handoff.json",
+      "expected_decision": "passed",
+      "quality_state": "complete",
+      "expected_reasons": [],
+      "tags": ["business", "node", "xiaomi", "real"]
+    },
+    {
+      "case_id": "xiaomi-financing-history-pass",
+      "kind": "node",
+      "skill_id": "cws-financing-history",
+      "run_id": "run-real-xiaomi-technology",
+      "handoff": "business/real/xiaomi-technology/artifacts/run-real-xiaomi-technology/cws-financing-history/handoff.json",
+      "expected_decision": "passed",
+      "quality_state": "complete",
+      "expected_reasons": [],
+      "tags": ["business", "node", "xiaomi", "real"]
+    },
+    {
+      "case_id": "xiaomi-due-diligence-final",
+      "kind": "final",
+      "skill_id": "cws-due-diligence",
+      "run_id": "run-real-xiaomi-technology",
+      "run_dir": "business/real/xiaomi-technology",
+      "evidence": "business/real/xiaomi-technology/artifacts/run-real-xiaomi-technology/cws-due-diligence/evidence.json",
+      "case_root": "business/real/xiaomi-technology/artifacts/run-real-xiaomi-technology/cws-due-diligence",
+      "expected_decision": "passed",
+      "quality_state": "complete",
+      "expected_reasons": [],
+      "tags": ["business", "final", "xiaomi", "real"]
+    }
+  ]
+}

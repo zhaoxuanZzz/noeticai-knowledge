@@ -1,0 +1,18 @@
+{
+  "skill_id": "cws-shareholder-structure",
+  "mode": "node",
+  "run_id": "run-test",
+  "decision": "passed",
+  "status": "passed",
+  "exit_code": 0,
+  "errors": [],
+  "judge": {
+    "protocol_version": "cws-gate-judge/v1",
+    "request_id": "runtime-cws-shareholder-structure-10ba60bb2a75",
+    "decision": "passed",
+    "confidence": 0.92,
+    "model": "mock-judge",
+    "rubric_version": "shareholder-structure-v1",
+    "findings": []
+  }
+}

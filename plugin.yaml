@@ -6,6 +6,9 @@ requires_env:
   - name: QCC_MCP_TOKEN
     description: Token for Qichacha MCP access.
     secret: true
+# Optional Judge env (not required): CWS_JUDGE_BASE_URL, CWS_JUDGE_API_KEY,
+# CWS_JUDGE_MODEL, CWS_JUDGE_MODE, CWS_JUDGE_ADAPTER, CWS_JUDGE_ENABLED,
+# CWS_JUDGE_TIMEOUT_SECONDS. Without a key, semantic judge fail-closes to needs_review.
 mcp_servers:
   qcc-company:
     url: https://agent.qcc.com/mcp/company/stream

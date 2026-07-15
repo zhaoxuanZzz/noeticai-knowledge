@@ -1,0 +1,9 @@
+{
+  "skill_id": "cws-company-basic-info",
+  "mode": "node",
+  "run_id": "run-test",
+  "decision": "passed",
+  "status": "passed",
+  "exit_code": 0,
+  "errors": []
+}

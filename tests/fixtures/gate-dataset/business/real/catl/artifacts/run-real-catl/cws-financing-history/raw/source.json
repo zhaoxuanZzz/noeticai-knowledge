@@ -1,0 +1,192 @@
+{
+  "facts": {
+    "capital_market_summary": {
+      "a_shares_listed": "2018-06-11，深交所300750",
+      "cumulative_dividends": "约600亿元（自上市以来）",
+      "current_market_cap_a": "约1.03万亿元（2025Q1）",
+      "dividend_payout_ratio": "50%（2023-2024连续两年）",
+      "h_shares_listed": "2025-05-20，港交所03750.HK",
+      "peak_market_cap_a": "约1.6万亿元（2021年）",
+      "total_raised_debt": "约45亿元（15+30公司债券）",
+      "total_raised_equity": "约1,076亿元（54.62 IPO + 197定增 + 450定增 + 353亿港元港股≈325亿人民币）"
+    },
+    "financing_rounds": [
+      {
+        "amount": "30亿元",
+        "investors": [
+          "国投创新",
+          "渤海华美",
+          "君联资本",
+          "七匹狼资本",
+          "广州越秀产业投资"
+        ],
+        "post_valuation": "210亿元",
+        "round": "Pre-IPO 首轮（股改后首轮外部融资）",
+        "source": "21世纪经济报道(2017), 君联资本公开资料",
+        "time": "2015年底"
+      },
+      {
+        "amount": "约80亿元",
+        "investors": [
+          "云锋基金",
+          "四川能投",
+          "平安置业",
+          "及部分首轮投资机构等共九家"
+        ],
+        "post_valuation": "约810亿元",
+        "round": "Pre-IPO 第二轮",
+        "source": "知乎专栏/公开报道",
+        "stake_sold": "9.87%",
+        "time": "2016年11月"
+      },
+      {
+        "amount_raised": "54.62亿元",
+        "code": "300750",
+        "consecutive_limit_up": "8个涨停板",
+        "exchange": "深交所创业板",
+        "first_day_close": "36.20元（+44%），市值786亿元",
+        "initial_market_cap": "约546亿元（发行价）",
+        "issue_price": "25.14元/股",
+        "pe_ratio": "22.99倍",
+        "round": "A股IPO",
+        "shares_issued": "2.17亿股",
+        "source": "中国证券报(2018), 新浪财经, 宁德时代招股书",
+        "time": "2018-06-11",
+        "total_shares_post_ipo": "21.72亿股",
+        "underwriter": "中信建投证券"
+      },
+      {
+        "amount": "15亿元",
+        "round": "公司债券",
+        "source": "东方财富/公开报道汇总",
+        "time": "2019年",
+        "type": "公司债券"
+      },
+      {
+        "amount": "30亿元",
+        "round": "公司债券",
+        "source": "东方财富/公开报道汇总",
+        "time": "2020年",
+        "type": "公司债券"
+      },
+      {
+        "amount_raised": "197亿元",
+        "issue_price": "161元/股",
+        "key_investors": [
+          {
+            "amount": "约100亿元",
+            "name": "高瓴资本",
+            "shares": "6583.85万股"
+          },
+          {
+            "amount": "约37亿元",
+            "name": "本田技研工业(中国)"
+          }
+        ],
+        "purpose": "产能扩张52GWh（湖西锂电池扩建16GWh等）",
+        "round": "定向增发(第一次)",
+        "source": "36氪(2020), 第一财经(2022), 网易(2024)",
+        "time": "2020年7月"
+      },
+      {
+        "amount_raised": "450亿元（原计划582亿，被深交所问询后下调）",
+        "issue_price": "410元/股（底价120.71%）",
+        "key_investors": [
+          {
+            "amount": "46.6亿元",
+            "name": "国泰君安证券",
+            "shares": "1137.5万股"
+          },
+          {
+            "amount": "40.7亿元",
+            "name": "摩根大通银行"
+          },
+          {
+            "amount": "33.6亿元",
+            "name": "巴克莱银行"
+          },
+          {
+            "amount": "30亿元",
+            "name": "高瓴资本（HHLR中国基金）",
+            "shares": "731.71万股"
+          },
+          {
+            "amount": "参与",
+            "name": "摩根士丹利"
+          },
+          {
+            "amount": "参与",
+            "name": "睿远基金"
+          },
+          {
+            "amount": "参与",
+            "name": "泰康资产"
+          }
+        ],
+        "purpose": "福鼎时代152亿 + 广东瑞庆时代117亿 + 江苏时代65亿 + 宁德蕉城时代46亿 + 研发70亿",
+        "registration_system_first": "注册制以来最大再融资项目",
+        "round": "定向增发(第二次)",
+        "source": "宁德时代公告(2022-06-22), 长江商报, 澎湃新闻",
+        "subscribers_count": 22,
+        "subscription_multiple": "超2倍",
+        "time": "2022年6月"
+      },
+      {
+        "amount_raised_net": "约353亿港元（约325亿元人民币）",
+        "code": "03750.HK",
+        "cornerstone_investors": 23,
+        "cornerstone_share": "57.1%",
+        "exchange": "香港联交所主板",
+        "first_day": "+16.43%，收306.2港元",
+        "issue_price": "HK$263/股",
+        "key_cornerstone": [
+          {
+            "amount": "38.7亿港元",
+            "name": "中石化"
+          },
+          {
+            "amount": "38.7亿港元",
+            "name": "科威特投资局(KIA)"
+          },
+          {
+            "amount": "基石参与",
+            "name": "高瓴资本"
+          },
+          {
+            "amount": "基石参与",
+            "name": "高毅资产"
+          },
+          {
+            "amount": "基石参与",
+            "name": "瑞银资管"
+          },
+          {
+            "amount": "基石参与",
+            "name": "橡树资本(Oaktree)"
+          },
+          {
+            "amount": "基石参与",
+            "name": "景林"
+          }
+        ],
+        "listing_duration": "从启动到上市128天",
+        "market_cap_hk_listing": "约1.39万亿港元",
+        "round": "港股二次上市",
+        "shares_issued": "1.35亿股（绿鞋前）",
+        "significance": "2025年全球最大IPO、港交所近4年最大IPO、首家A+H动力电池公司",
+        "source": "宁德时代官网(2025-05-20), 界面新闻, 21世纪经济报道, MIT科技评论",
+        "subscription_multiple": "约115倍",
+        "time": "2025-05-20",
+        "use_of_proceeds": "90%用于匈牙利项目第一期(34GWh)及第二期(38GWh)，10%营运资金"
+      }
+    ],
+    "name": "宁德时代新能源科技股份有限公司",
+    "unified_social_credit_code": "91350900587527783P"
+  },
+  "observed_at": "2026-07-07",
+  "source_id": "financing",
+  "subject": {
+    "name": "宁德时代新能源科技股份有限公司",
+    "unified_social_credit_code": "91350900587527783P"
+  }
+}

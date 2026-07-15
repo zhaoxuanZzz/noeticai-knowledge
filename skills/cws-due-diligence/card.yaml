@@ -24,6 +24,48 @@ rules:
 
 gate:
   handoff: required
+  required_outputs:
+    - company_assessment
+    - equity_and_control_risks
+    - litigation_and_operating_risks
+    - financing_signals
+    - evidence_gaps
+    - recommendations
+  required_meta:
+    - subject
+    - sources
+    - data_as_of
+    - evidence_gaps
+    - wiki_writeback
+    - run_id
+  artifact_checks:
+    evidence_gaps:
+      type: list
+    company_assessment:
+      type: object_or_string
+      non_empty: true
+    litigation_and_operating_risks:
+      type: object_or_string
+      non_empty: true
+    recommendations:
+      type: object_or_string
+      non_empty: true
+  behavior_checks:
+    - id: no_fabricated_empty_fill
+      when: missing_data
+      require: evidence_gaps_non_null
   final:
     require_parent_artifacts: [company_profile, shareholder_structure, litigation_risk, financing_history]
     require_report_handoff: true
+  semantic:
+    evidence: required
+    deterministic_checks:
+      - claim_evidence
+      - subject_identity
+      - source_conflict_disclosure
+    required_claims:
+      - artifacts.litigation_and_operating_risks.risk
+      - artifacts.recommendations
+    judge:
+      rubric: due-diligence-v1
+      on_suspicious: needs_review

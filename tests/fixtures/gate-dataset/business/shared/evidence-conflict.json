@@ -1,0 +1,25 @@
+{
+  "run_id": "run-dataset",
+  "skill_id": "cws-company-profile",
+  "subject": {
+    "name": "杭州示例科技有限公司",
+    "unified_social_credit_code": "91330100TEST000001"
+  },
+  "evidence": [{
+    "id": "e-status",
+    "subject_id": "91330100TEST000001",
+    "field": "operating_status",
+    "value": "存续",
+    "source_ref": "raw/company.json#/status"
+  }],
+  "claims": [{
+    "artifact_path": "artifacts.operating_status.status",
+    "value": "存续",
+    "evidence_refs": ["e-status"]
+  }],
+  "conflicts": [{
+    "field": "operating_status",
+    "evidence_refs": ["e-status"],
+    "disclosed": false
+  }]
+}

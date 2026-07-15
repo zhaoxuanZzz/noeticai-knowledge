@@ -1,0 +1,18 @@
+{
+  "skill_id": "cws-investment-analysis",
+  "run_id": "run-test",
+  "role": "report",
+  "subject": "杭州示例科技有限公司",
+  "sources": [{"name": "parent-artifacts", "ref": "workflow"}],
+  "data_as_of": "2026-07-14",
+  "wiki_writeback": {"status": "skipped", "paths": []},
+  "evidence_gaps": [],
+  "artifacts": {
+    "target_overview": "杭州示例科技有限公司，存续",
+    "governance_assessment": "控制权可识别",
+    "risk_assessment": {"level": "中低"},
+    "financing_and_valuation_signals": "无公开估值",
+    "investment_view": {"stance": "观察", "rationale": "信息完整度有限，建议继续跟踪"},
+    "evidence_gaps": []
+  }
+}

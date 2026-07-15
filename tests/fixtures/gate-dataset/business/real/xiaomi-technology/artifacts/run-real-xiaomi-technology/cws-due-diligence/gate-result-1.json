@@ -1,0 +1,12 @@
+{
+  "run_id": "run-real-xiaomi-technology",
+  "node_id": "task5",
+  "skill": "cws-due-diligence",
+  "attempt": 1,
+  "status": "passed",
+  "gate": "final",
+  "exit_code": 0,
+  "errors": [],
+  "handoff_path": "/Users/zhaoxuan/.cws/gate-dataset-staging/2026-07-13-history-import-v2/companies/xiaomi-technology/kb/artifacts/run-real-xiaomi-technology/cws-due-diligence/handoff.json",
+  "checked_at": "2026-07-13T08:28:53Z"
+}

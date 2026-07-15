@@ -1,0 +1,14 @@
+{
+  "run_id": "run-test",
+  "skill_id": "cws-investment-analysis",
+  "subject": {"name": "杭州示例科技有限公司"},
+  "evidence": [
+    {"id": "e-level", "field": "risk_level", "value": "中低", "source_ref": "raw/report.json#/risk"},
+    {"id": "e-stance", "field": "stance", "value": "观察", "source_ref": "raw/report.json#/stance"}
+  ],
+  "claims": [
+    {"artifact_path": "artifacts.risk_assessment.level", "value": "中低", "evidence_refs": ["e-level"]},
+    {"artifact_path": "artifacts.investment_view.stance", "value": "观察", "evidence_refs": ["e-stance"]}
+  ],
+  "conflicts": []
+}

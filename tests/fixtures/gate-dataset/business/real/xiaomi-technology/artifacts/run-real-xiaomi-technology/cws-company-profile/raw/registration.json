@@ -1,0 +1,17 @@
+{
+  "facts": {
+    "established_at": "2010-03-03",
+    "industry": "其他技术推广服务",
+    "legal_representative": "雷军",
+    "name": "小米科技有限责任公司",
+    "registered_capital": "147652.5441万元",
+    "status": "存续（在营、开业、在册）",
+    "unified_social_credit_code": "91110108551385082Q"
+  },
+  "observed_at": "2026-07-10",
+  "source_id": "registration",
+  "subject": {
+    "name": "小米科技有限责任公司",
+    "unified_social_credit_code": "91110108551385082Q"
+  }
+}

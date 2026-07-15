@@ -1,0 +1,19 @@
+{
+  "run_id": "run-real-byd",
+  "skill": "cws-company-profile",
+  "role": "data",
+  "subject": "比亚迪股份有限公司",
+  "unified_social_credit_code": "91440300192317458F",
+  "sources": ["raw/registration.json"],
+  "data_as_of": "2026-07-07",
+  "wiki_writeback": {"status": "skipped", "reason": "frozen knowledge-base capture"},
+  "evidence_gaps": ["冻结快照未包含完整经营范围和最新规模指标"],
+  "artifacts": {
+    "company_summary": {"name": "比亚迪股份有限公司", "status": "开业（存续）", "legal_representative": "王传福", "registered_capital": "911719.7565万元"},
+    "industry_position": "新能源车整车制造",
+    "operating_status": {"status": "开业（存续）"},
+    "key_tags": ["新能源车整车制造", "存续"],
+    "risk_flags": [],
+    "evidence_gaps": ["冻结快照未包含完整经营范围和最新规模指标"]
+  }
+}

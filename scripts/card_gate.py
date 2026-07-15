@@ -27,6 +27,27 @@ BEHAVIOR_CHECK_IDS = frozenset(
     }
 )
 
+SEMANTIC_CHECK_IDS = frozenset(
+    {
+        "claim_evidence",
+        "subject_identity",
+        "freshness_disclosure",
+        "source_conflict_disclosure",
+        "negative_claim_coverage",
+    }
+)
+
+SEMANTIC_RUBRIC_IDS = frozenset(
+    {
+        "company-profile-v1",
+        "due-diligence-v1",
+        "shareholder-structure-v1",
+        "litigation-risk-v1",
+        "financing-history-v1",
+        "investment-analysis-v1",
+    }
+)
+
 DATA_ROLE_FORBIDDEN_KEYS = frozenset(
     {
         "final_report",
@@ -252,6 +273,62 @@ def normalize_gate(card: dict[str, Any], path: Path) -> dict[str, Any] | None:
             "require_report_handoff": bool(final_raw.get("require_report_handoff", False)),
         }
 
+    semantic_raw = gate.get("semantic")
+    semantic: dict[str, Any] | None = None
+    if semantic_raw is not None:
+        if not isinstance(semantic_raw, dict):
+            raise CardGateError(f"{path}: gate.semantic must be a mapping")
+        if semantic_raw.get("evidence") != "required":
+            raise CardGateError(f"{path}: gate.semantic.evidence must be 'required'")
+        checks = _as_str_list(
+            semantic_raw.get("deterministic_checks"),
+            path,
+            "gate.semantic.deterministic_checks",
+        )
+        unknown_checks = [check for check in checks if check not in SEMANTIC_CHECK_IDS]
+        if unknown_checks:
+            raise CardGateError(
+                f"{path}: gate.semantic.deterministic_checks not in whitelist: "
+                f"{unknown_checks}; allowed={sorted(SEMANTIC_CHECK_IDS)}"
+            )
+        required_claims = _as_str_list(
+            semantic_raw.get("required_claims"),
+            path,
+            "gate.semantic.required_claims",
+        )
+        invalid_claims = []
+        for claim_path in required_claims:
+            parts = claim_path.split(".")
+            if len(parts) < 2 or parts[0] != "artifacts" or parts[1] not in outputs:
+                invalid_claims.append(claim_path)
+        if invalid_claims:
+            raise CardGateError(
+                f"{path}: gate.semantic.required_claims must point into card outputs: "
+                f"{invalid_claims}"
+            )
+        judge_raw = semantic_raw.get("judge")
+        judge: dict[str, Any] | None = None
+        if judge_raw is not None:
+            if not isinstance(judge_raw, dict):
+                raise CardGateError(f"{path}: gate.semantic.judge must be a mapping")
+            rubric = judge_raw.get("rubric")
+            if rubric not in SEMANTIC_RUBRIC_IDS:
+                raise CardGateError(
+                    f"{path}: gate.semantic.judge.rubric must be one of "
+                    f"{sorted(SEMANTIC_RUBRIC_IDS)}"
+                )
+            if judge_raw.get("on_suspicious") != "needs_review":
+                raise CardGateError(
+                    f"{path}: gate.semantic.judge.on_suspicious must be 'needs_review'"
+                )
+            judge = {"rubric": rubric, "on_suspicious": "needs_review"}
+        semantic = {
+            "evidence": "required",
+            "deterministic_checks": checks,
+            "required_claims": required_claims,
+            "judge": judge,
+        }
+
     return {
         "handoff": "required",
         "required_outputs": required_outputs,
@@ -259,6 +336,7 @@ def normalize_gate(card: dict[str, Any], path: Path) -> dict[str, Any] | None:
         "artifact_checks": artifact_checks,
         "behavior_checks": behavior_checks,
         "final": final,
+        "semantic": semantic,
     }
 
 

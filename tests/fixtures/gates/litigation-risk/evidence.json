@@ -1,0 +1,18 @@
+{
+  "run_id": "run-test",
+  "skill_id": "cws-litigation-risk",
+  "subject": {"name": "杭州示例科技有限公司"},
+  "evidence": [{
+    "id": "e-overview",
+    "field": "litigation_overview",
+    "value": "近三年公开诉讼检索完成，未见重大未决案件",
+    "source_ref": "raw/source.json#/overview",
+    "coverage": {"complete": true, "query_succeeded": true}
+  }],
+  "claims": [{
+    "artifact_path": "artifacts.litigation_summary.overview",
+    "value": "近三年公开诉讼检索完成，未见重大未决案件",
+    "evidence_refs": ["e-overview"]
+  }],
+  "conflicts": []
+}

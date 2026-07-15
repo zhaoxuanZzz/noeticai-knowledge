@@ -1,0 +1,19 @@
+{
+  "skill_id": "cws-company-profile",
+  "run_id": "run-dataset",
+  "role": "data",
+  "subject": "杭州示例科技有限公司",
+  "unified_social_credit_code": "91330100TEST000001",
+  "sources": [{"name": "frozen-registry", "ref": "raw/company.json"}],
+  "data_as_of": "2026-07-10",
+  "wiki_writeback": {"status": "skipped", "paths": []},
+  "evidence_gaps": [],
+  "artifacts": {
+    "company_summary": {"name": "杭州示例科技有限公司", "status": "存续"},
+    "industry_position": {"industry": "软件和信息技术服务业"},
+    "operating_status": {"status": "存续"},
+    "key_tags": ["科技"],
+    "risk_flags": [],
+    "evidence_gaps": []
+  }
+}

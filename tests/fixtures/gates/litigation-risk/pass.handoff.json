@@ -1,0 +1,19 @@
+{
+  "skill_id": "cws-litigation-risk",
+  "run_id": "run-test",
+  "role": "data",
+  "subject": "杭州示例科技有限公司",
+  "sources": [{"name": "qcc", "ref": "company/litigation"}],
+  "data_as_of": "2026-07-14",
+  "wiki_writeback": {"status": "skipped", "paths": []},
+  "evidence_gaps": [],
+  "artifacts": {
+    "litigation_summary": {
+      "overview": "近三年公开诉讼检索完成，未见重大未决案件"
+    },
+    "enforcement_records": [],
+    "credit_risk_flags": [],
+    "case_trends": {"window": "3y", "note": "案量平稳"},
+    "evidence_gaps": []
+  }
+}

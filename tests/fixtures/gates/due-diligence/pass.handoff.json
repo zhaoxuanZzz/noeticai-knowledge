@@ -1,0 +1,18 @@
+{
+  "skill_id": "cws-due-diligence",
+  "run_id": "run-test",
+  "role": "report",
+  "subject": "杭州示例科技有限公司",
+  "sources": [{"name": "parent-artifacts", "ref": "workflow"}],
+  "data_as_of": "2026-07-14",
+  "wiki_writeback": {"status": "skipped", "paths": []},
+  "evidence_gaps": [],
+  "artifacts": {
+    "company_assessment": "主体清晰，经营状态存续",
+    "equity_and_control_risks": "控制权结构可识别，未见重大异常",
+    "litigation_and_operating_risks": {"risk": "低风险"},
+    "financing_signals": "未见公开融资轮次",
+    "evidence_gaps": [],
+    "recommendations": "继续核验后续变化"
+  }
+}

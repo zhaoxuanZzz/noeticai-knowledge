@@ -1,0 +1,18 @@
+{
+  "skill_id": "cws-company-profile",
+  "mode": "node",
+  "run_id": "run-test",
+  "decision": "passed",
+  "status": "passed",
+  "exit_code": 0,
+  "errors": [],
+  "judge": {
+    "protocol_version": "cws-gate-judge/v1",
+    "request_id": "runtime-cws-company-profile-f878ae501f64",
+    "decision": "passed",
+    "confidence": 0.92,
+    "model": "mock-judge",
+    "rubric_version": "company-profile-v1",
+    "findings": []
+  }
+}

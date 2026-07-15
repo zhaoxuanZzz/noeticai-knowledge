@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import json
+import re
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -138,3 +141,112 @@ def stage_task_outputs(stage_skills: list[str], outputs: list[str]) -> list[list
     if len(outputs) == len(stage_skills):
         return [[output] for output in outputs]
     raise WorkSuiteError("multi-skill stages must have zero outputs or one output per skill")
+
+
+def validate_auto_plan(path: Path, entry_skill: str) -> list[dict[str, object]]:
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise WorkSuiteError(f"cannot read auto plan {path}: {exc}") from exc
+    raw_nodes = data.get("nodes") if isinstance(data, dict) else None
+    if not isinstance(raw_nodes, list) or not raw_nodes:
+        raise WorkSuiteError("auto plan nodes must be a non-empty list")
+
+    known = known_skills()
+    nodes: dict[str, dict[str, object]] = {}
+    for raw in raw_nodes:
+        if not isinstance(raw, dict):
+            raise WorkSuiteError("auto plan node must be an object")
+        node_id = raw.get("id")
+        skill = raw.get("skill")
+        parents = raw.get("parents", [])
+        inputs = raw.get("inputs", [])
+        outputs = raw.get("outputs", [])
+        if not isinstance(node_id, str) or not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,63}", node_id):
+            raise WorkSuiteError(f"invalid auto plan node id: {node_id!r}")
+        if node_id in nodes:
+            raise WorkSuiteError(f"duplicate auto plan node id: {node_id}")
+        if skill not in known:
+            raise WorkSuiteError(f"auto plan node {node_id}: unknown skill {skill!r}")
+        if any(
+            not isinstance(values, list) or not all(isinstance(item, str) for item in values)
+            for values in (parents, inputs, outputs)
+        ):
+            raise WorkSuiteError(f"auto plan node {node_id}: parents/inputs/outputs must be string lists")
+        nodes[node_id] = {
+            "id": node_id,
+            "skill": skill,
+            "parents": list(parents),
+            "inputs": list(inputs),
+            "outputs": list(outputs),
+        }
+
+    skills = [str(node["skill"]) for node in nodes.values()]
+    if len(skills) != len(set(skills)):
+        raise WorkSuiteError("auto plan skills must be unique")
+    if sum(node["skill"] == entry_skill for node in nodes.values()) != 1:
+        raise WorkSuiteError(f"auto plan must contain entry skill exactly once: {entry_skill}")
+    gates: dict[str, dict[str, object]] = {}
+    for node_id, node in nodes.items():
+        missing = [parent for parent in node["parents"] if parent not in nodes]
+        if missing:
+            raise WorkSuiteError(f"auto plan node {node_id}: missing parents {missing}")
+        parent_outputs = {
+            output
+            for parent in node["parents"]
+            for output in nodes[parent]["outputs"]
+        }
+        unavailable = [item for item in node["inputs"] if item not in parent_outputs]
+        if unavailable:
+            raise WorkSuiteError(f"auto plan node {node_id}: unavailable inputs {unavailable}")
+
+    scripts = ROOT / "scripts"
+    if str(scripts) not in sys.path:
+        sys.path.insert(0, str(scripts))
+    from card_gate import CardGateError, load_skill_gate
+
+    for node_id, node in nodes.items():
+        try:
+            _card, gate = load_skill_gate(ROOT, str(node["skill"]))
+        except CardGateError as exc:
+            raise WorkSuiteError(str(exc)) from exc
+        if gate is None:
+            raise WorkSuiteError(f"auto plan node {node_id}: loop skill has no gate")
+        gates[node_id] = gate
+
+    entry_id = next(
+        node_id for node_id, node in nodes.items() if node["skill"] == entry_skill
+    )
+    ancestors: set[str] = set()
+    pending = list(nodes[entry_id]["parents"])
+    while pending:
+        parent = pending.pop()
+        if parent in ancestors:
+            continue
+        ancestors.add(parent)
+        pending.extend(nodes[parent]["parents"])
+    produced = {
+        output for node_id in ancestors for output in nodes[node_id]["outputs"]
+    }
+    required = set(
+        ((gates[entry_id].get("final") or {}).get("require_parent_artifacts") or [])
+    )
+    missing_required = sorted(required - produced)
+    if missing_required:
+        raise WorkSuiteError(
+            f"auto plan missing final parent artifacts: {missing_required}"
+        )
+
+    ordered: list[dict[str, object]] = []
+    remaining = dict(nodes)
+    while remaining:
+        ready = [
+            node_id
+            for node_id, node in remaining.items()
+            if all(parent not in remaining for parent in node["parents"])
+        ]
+        if not ready:
+            raise WorkSuiteError("auto plan contains a cycle")
+        for node_id in ready:
+            ordered.append(remaining.pop(node_id))
+    return ordered

@@ -115,6 +115,7 @@ def register(ctx):
 
     ctx.register_hook("pre_gateway_dispatch", rewrite_gateway_command)
     ctx.register_hook("pre_tool_call", _gate_before_kanban_complete)
+    ctx.register_hook("kanban_task_claimed", _loop_after_kanban_claim)
 
     if hasattr(ctx, "register_cli_command"):
         ctx.register_cli_command(
@@ -155,12 +156,48 @@ def _gate_before_kanban_complete(tool_name: str = "", args: Any = None, task_id:
             conn.close()
         if task is None:
             return None
-        result = _gate_module().gate_completion(task_id, task.body, board=board)
+        gate = _gate_module()
+        if gate.loop_context(task.body):
+            result = gate.complete_loop(task_id, task.body, board=board)
+            if result and result["status"] != "passed":
+                action = result.get("kanban_action", result.get("next_action"))
+                return {
+                    "action": "block",
+                    "message": f"CWS loop kept task open: {action}",
+                }
+            return None
+        result = gate.gate_completion(task_id, task.body, board=board)
         if result and result["status"] == "blocked":
             return {"action": "block", "message": "CWS gate blocked completion: " + "; ".join(result["errors"]) + ". A human must run `hermes cws-gate retry` after repair or `hermes cws-gate waive --reason ...`."}
     except Exception as exc:
         return {"action": "block", "message": f"CWS gate failed closed: {exc}"}
     return None
+
+
+def _loop_after_kanban_claim(
+    task_id: str = "", board: str | None = None, **_: Any
+) -> None:
+    if not task_id:
+        return
+    from hermes_cli import kanban_db
+
+    conn = kanban_db.connect(board=board)
+    try:
+        task = kanban_db.get_task(conn, task_id)
+    finally:
+        conn.close()
+    if task is None:
+        return
+    try:
+        _gate_module().claim_loop(task_id, task.body)
+    except Exception as exc:
+        conn = kanban_db.connect(board=board)
+        try:
+            kanban_db.block_task(
+                conn, task_id, reason=f"CWS loop claim failed closed: {exc}"
+            )
+        finally:
+            conn.close()
 
 
 def _setup_gate_cli(parser: Any) -> None:

@@ -4,7 +4,7 @@
 
 本插件保留 `.mcp.json` 作为跨平台 companion 配置（Codex 等），当前已列出企查查 MCP 服务端点。
 
-Hermes **不读取** `.mcp.json`。Hermes 侧权威声明在 `plugin.yaml` 的 `mcp_servers`：插件 `register()`（以及本地 `deploy_local_hermes.sh`）会把这些服务幂等合并进 `~/.hermes/config.yaml`，鉴权使用 `Bearer ${QCC_MCP_TOKEN}`。`QCC_MCP_TOKEN` 由 `requires_env` 在 `hermes plugins install` 时写入 `~/.hermes/.env`。
+Hermes **不读取** `.mcp.json`。Hermes 侧权威声明在 `plugin.yaml` 的 `mcp_servers`：插件 `register()`（以及本地 `make install` / `deploy_local_hermes.sh`）会把这些服务幂等合并进 `~/.hermes/config.yaml`，鉴权使用 `Bearer ${QCC_MCP_TOKEN}`。`QCC_MCP_TOKEN` 与可选的 Judge 变量由 `make install` / `make configure-env` 写入 `~/.hermes/.env` 与 `~/.cws/env.sh`（亦可在 `hermes plugins install` 时由 `requires_env` 提示）。
 
 本插件不定义连接协议，也不把 MCP 工具名写入业务 skill workflow。业务 skill 只通过 `card.yaml` 的 `data_needs` 描述所需企业数据，并在 skill 内先查企业信息库 wiki、再按缺口补齐公开企业信息。
 
